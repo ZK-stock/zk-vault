@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZK Vault - Gemini Canvas Tracker</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darker: '#090d16',
+                        card: '#111827',
+                        border: '#1f293d',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome & Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        code, pre { font-family: 'JetBrains Mono', monospace; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #090d16; }
+        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+        
+        .code-container { display: flex; }
+        .line-numbers { text-align: right; user-select: none; padding: 0.75rem 0.5rem; color: #4b5563; border-right: 1px solid #1f293d; font-size: 11px; line-height: 1.5; background-color: #0d121d; }
+        .code-content { flex: 1; padding: 0.75rem; overflow-x: auto; font-size: 11px; line-height: 1.5; color: #34d399; }
+    </style>
+</head>
+<body class="bg-darker text-slate-100 min-h-screen selection:bg-indigo-500 selection:text-white">
+
+    <!-- Background Glow Effects -->
+    <div class="fixed top-0 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="fixed bottom-0 right-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 pb-6 border-b border-slate-800/80 gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-indigo-500/25">
+                    <i class="fa-solid fa-code-merge text-xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-400 bg-clip-text text-transparent">ZK Vault</h1>
+                    <p class="text-xs text-slate-400">Gemini Canvas Visual Gallery & Hidden Code Settings</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3 w-full md:w-auto">
+                <div class="relative flex-1 md:w-64">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-500">
+                        <i class="fa-solid fa-search text-xs"></i>
+                    </span>
+                    <input type="text" id="searchInput" oninput="renderCanvases()" placeholder="Cari project..." class="w-full bg-card border border-border rounded-xl pl-9 pr-4 py-2 text-xs focus:outline-none focus:border-indigo-500 transition">
+                </div>
+                <button onclick="openModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/20 transition flex items-center gap-2 whitespace-nowrap cursor-pointer">
+                    <i class="fa-solid fa-plus"></i> Canvas Baru
+                </button>
+            </div>
+        </header>
+
+        <!-- Grid Container - Auto Adjusted -->
+        <div id="canvasGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start">
+            <!-- Data loaded via JS -->
+        </div>
+    </div>
+
+    <!-- Modal Form (Pengaturan di Balik Thumbnail: Edit Info, History, & Code Editor) -->
+    <div id="canvasModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-card border border-border w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="px-6 py-4 border-b border-border flex justify-between items-center bg-slate-900/50">
+                <h2 id="modalTitle" class="text-sm font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-2">
+                    <i class="fa-solid fa-gear"></i> Pengaturan & Kode Project
+                </h2>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white transition cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <form id="canvasForm" onsubmit="saveCanvas(event)" class="p-6 space-y-4 overflow-y-auto flex-1">
+                <input type="hidden" id="canvasId">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Judul Project *</label>
+                        <input type="text" id="title" required placeholder="Misal: Kalkulator AI" class="w-full bg-darker border border-border rounded-xl p-2.5 text-xs focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Link Gemini Canvas</label>
+                        <input type="url" id="canvasLink" placeholder="https://gemini.google.com/app/..." class="w-full bg-darker border border-border rounded-xl p-2.5 text-xs focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Ganti / Upload Thumbnail Preview</label>
+                    <input type="file" id="imageInput" accept="image/*" class="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer bg-darker border border-border rounded-xl">
+                    <div id="imagePreviewContainer" class="mt-2 hidden">
+                        <img id="imagePreview" src="" alt="Preview" class="h-28 w-full object-cover rounded-xl border border-border">
+                    </div>
+                </div>
+
+                <!-- Bagian Pengaturan Kode & Versi di Balik Layar -->
+                <div class="p-4 bg-darker/60 border border-border rounded-xl space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-bold text-indigo-300"><i class="fa-solid fa-code mr-1"></i> Editor Kode Versi Aktif</span>
+                        <div id="versionTabsInModal" class="flex items-center gap-1">
+                            <!-- Tab versi dalam modal di-generate lewat JS -->
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Catatan Update / Log Versi Ini</label>
+                        <input type="text" id="updateLog" placeholder="Contoh: v1.0 - Rilis pertama" class="w-full bg-card border border-border rounded-xl p-2 text-xs focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-xs font-medium text-slate-400">Potongan Kode (Code Snippet dengan Nomor Baris)</label>
+                            <button type="button" onclick="addNewVersionFromModal()" class="text-[10px] bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 px-2 py-0.5 rounded-lg hover:bg-indigo-600/30 transition cursor-pointer">
+                                <i class="fa-solid fa-plus"></i> Simpan Sebagai Versi Baru
+                            </button>
+                        </div>
+                        <textarea id="codeSnippet" rows="8" placeholder="Paste kode utama di sini..." class="w-full bg-card font-mono text-xs border border-border rounded-xl p-2.5 focus:outline-none focus:border-indigo-500"></textarea>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-3 border-t border-border">
+                    <button type="button" onclick="closeModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-medium transition cursor-pointer">Batal</button>
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/20 transition cursor-pointer">Simpan Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript Aplikasi -->
+    <script>
+        let canvases = JSON.parse(localStorage.getItem('zk_vault_canvases_clean')) || [];
+        let currentBase64Image = '';
+
+        function renderCanvases() {
+            const searchKeyword = document.getElementById('searchInput').value.toLowerCase();
+            const grid = document.getElementById('canvasGrid');
+
+            const filtered = canvases.filter(item => 
+                item.title.toLowerCase().includes(searchKeyword) || 
+                (item.canvasLink && item.canvasLink.toLowerCase().includes(searchKeyword))
+            );
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-16 bg-card border border-dashed border-border rounded-2xl">
+                        <i class="fa-solid fa-photo-film text-4xl text-slate-600 mb-3"></i>
+                        <p class="text-sm text-slate-400">Belum ada project tersimpan atau pencarian tidak ditemukan.</p>
+                    </div>`;
+                return;
+            }
+
+            grid.innerHTML = filtered.map((item) => {
+                const realIndex = canvases.indexOf(item);
+                const history = item.history || [{ version: 'v1.0', log: item.updateLog || 'Initial', code: item.codeSnippet, date: item.date }];
+                const activeVersionIdx = (item.activeVersionIdx !== undefined && item.activeVersionIdx < history.length) ? item.activeVersionIdx : history.length - 1;
+                const activeVersionData = history[activeVersionIdx];
+
+                return `
+                    <div class="bg-card border border-border rounded-3xl overflow-hidden flex flex-col justify-between shadow-xl shadow-black/30 hover:border-indigo-900 transition">
+                        <div>
+                            <!-- Thumbnail Otomatis Menyesuaikan -->
+                            <div class="relative w-full bg-darker">
+                                ${item.image ? `
+                                    <div class="w-full max-h-80 overflow-hidden bg-black/40 flex items-center justify-center border-b border-border">
+                                        <img src="${item.image}" alt="${item.title}" class="w-full h-auto object-cover">
+                                    </div>
+                                ` : `
+                                    <div class="py-12 bg-slate-900 text-center text-slate-500 text-xs italic border-b border-border">Tanpa Thumbnail Gambar</div>
+                                `}
+
+                                <!-- Tab Switcher Versi di Atas Gambar -->
+                                <div class="absolute top-3 right-3 flex items-center gap-1 bg-slate-950/80 backdrop-blur-md p-1.5 rounded-xl border border-white/10 z-10 shadow-lg">
+                                    ${history.map((ver, vIdx) => `
+                                        <button type="button" onclick="switchVersion(${realIndex},${vIdx})" class="px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold transition cursor-pointer ${vIdx === activeVersionIdx ? 'bg-indigo-600 text-white shadow' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}">
+                                            ${ver.version}
+                                        </button>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            
+                            <div class="p-5 space-y-3">
+                                <div class="flex justify-between items-start gap-2">
+                                    <h3 class="font-bold text-base text-white">${item.title}</h3>
+                                    <span class="text-[10px] text-slate-400 bg-slate-800 px-2 py-0.5 rounded shrink-0">${activeVersionData.date || item.date || ''}</span>
+                                </div>
+
+                                <!-- Log Versi Aktif -->
+                                <div class="text-xs text-slate-300 bg-darker/60 border border-border rounded-xl p-2.5 flex items-center gap-2">
+                                    <span class="text-indigo-400 font-bold uppercase text-[9px] bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20 shrink-0">${activeVersionData.version}</span>
+                                    <span class="truncate italic">"${activeVersionData.log || 'Tanpa catatan'}"</span>
+                                </div>
+
+                                <!-- Tombol Buka Gemini Besar -->
+                                ${item.canvasLink ? `
+                                    <a href="${item.canvasLink}" target="_blank" 
+                                       class="flex w-full items-center justify-center gap-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 
+                                              text-white font-bold py-3 px-5 rounded-2xl shadow-lg shadow-blue-600/20 transition-all transform hover:-translate-y-0.5 text-xs uppercase tracking-wider">
+                                        <img src="https://www.gstatic.com/lamda/images/gemini_favicon_f39189c6f0d2a18137982.png" alt="Gemini" class="w-4 h-4">
+                                        Buka Gemini Canvas
+                                        <i class="fa-solid fa-arrow-up-right-from-square text-[10px] opacity-70"></i>
+                                    </a>
+                                ` : ''}
+                            </div>
+                        </div>
+                        
+                        <!-- Footer Kartu: Tombol Pengaturan (Dibalik Thumbnail) & Hapus -->
+                        <div class="px-5 py-3 bg-darker/50 border-t border-border flex justify-between items-center text-xs">
+                            <button type="button" onclick="editCanvas(${realIndex})" class="text-indigo-400 hover:text-indigo-300 transition flex items-center gap-1.5 font-medium cursor-pointer">
+                                <i class="fa-solid fa-gear text-xs"></i> Pengaturan & Kode
+                            </button>
+                            <button type="button" onclick="deleteCanvas(${realIndex})" class="text-slate-500 hover:text-red-400 transition cursor-pointer">
+                                <i class="fa-solid fa-trash text-xs"></i> Hapus
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openModal() {
+            document.getElementById('canvasModal').classList.remove('hidden');
+            document.getElementById('canvasModal').classList.add('flex');
+            document.getElementById('canvasForm').reset();
+            document.getElementById('canvasId').value = '';
+            document.getElementById('modalTitle').innerHTML = `<i class="fa-solid fa-gear"></i> Tambah Project Canvas Baru`;
+            document.getElementById('imagePreviewContainer').classList.add('hidden');
+            document.getElementById('versionTabsInModal').innerHTML = `<span class="text-[10px] text-slate-500 font-mono">v1.0 (Baru)</span>`;
+            currentBase64Image = '';
+        }
+
+        function closeModal() {
+            document.getElementById('canvasModal').classList.add('hidden');
+            document.getElementById('canvasModal').classList.remove('flex');
+        }
+
+        const imageInput = document.getElementById('imageInput');
+        imageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(uploadEvent) {
+                    currentBase64Image = uploadEvent.target.result;
+                    document.getElementById('imagePreview').src = currentBase64Image;
+                    document.getElementById('imagePreviewContainer').classList.remove('hidden');
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function saveCanvas(e) {
+            e.preventDefault();
+            const id = document.getElementById('canvasId').value;
+            const title = document.getElementById('title').value;
+            const canvasLink = document.getElementById('canvasLink').value;
+            const codeSnippet = document.getElementById('codeSnippet').value;
+            const updateLog = document.getElementById('updateLog').value || 'Update info';
+            const date = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+
+            if (id === '') {
+                const newCanvas = {
+                    title,
+                    canvasLink,
+                    image: currentBase64Image,
+                    history: [
+                        {
+                            version: 'v1.0',
+                            log: updateLog,
+                            code: codeSnippet,
+                            date: date
+                        }
+                    ],
+                    activeVersionIdx: 0
+                };
+                canvases.unshift(newCanvas);
+            } else {
+                let item = canvases[id];
+                item.title = title;
+                item.canvasLink = canvasLink;
+                if (currentBase64Image) item.image = currentBase64Image;
+                
+                const activeIdx = item.activeVersionIdx || 0;
+                if (item.history && item.history[activeIdx]) {
+                    item.history[activeIdx].code = codeSnippet;
+                    item.history[activeIdx].log = updateLog;
+                }
+            }
+
+            localStorage.setItem('zk_vault_canvases_clean', JSON.stringify(canvases));
+            closeModal();
+            renderCanvases();
+        }
+
+        // Simpan kode di modal sebagai versi baru (snapshot riwayat)
+        function addNewVersionFromModal() {
+            const id = document.getElementById('canvasId').value;
+            if (id === '') {
+                alert('Simpan project terlebih dahulu sebelum membuat versi baru.');
+                return;
+            }
+
+            let item = canvases[id];
+            const nextVersion = `v1.${item.history.length}`;
+            const newLog = prompt(`Masukkan catatan update untuk versi baru (${nextVersion}):`, `Update fitur`);
+            if (newLog === null) return;
+
+            const codeSnippet = document.getElementById('codeSnippet').value;
+            const date = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+
+            item.history.push({
+                version: nextVersion,
+                log: newLog,
+                code: codeSnippet,
+                date: date
+            });
+            item.activeVersionIdx = item.history.length - 1;
+
+            localStorage.setItem('zk_vault_canvases_clean', JSON.stringify(canvases));
+            editCanvas(id); // Refresh modal view
+            renderCanvases();
+            alert(`Versi ${nextVersion} berhasil disimpan!`);
+        }
+
+        function switchVersion(canvasIdx, versionIdx) {
+            canvases[canvasIdx].activeVersionIdx = versionIdx;
+            localStorage.setItem('zk_vault_canvases_clean', JSON.stringify(canvases));
+            renderCanvases();
+        }
+
+        function editCanvas(index) {
+            const item = canvases[index];
+            document.getElementById('canvasId').value = index;
+            document.getElementById('title').value = item.title;
+            document.getElementById('canvasLink').value = item.canvasLink || '';
+            
+            const activeIdx = item.activeVersionIdx || 0;
+            const activeData = item.history ? item.history[activeIdx] : {};
+            document.getElementById('codeSnippet').value = activeData.code || '';
+            document.getElementById('updateLog').value = activeData.log || '';
+
+            // Render version tabs inside modal settings
+            const history = item.history || [];
+            const tabsHtml = history.map((ver, vIdx) => `
+                <button type="button" onclick="switchModalVersion(${index}, ${vIdx})" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold transition cursor-pointer ${vIdx === activeIdx ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}">
+                    ${ver.version}
+                </button>
+            `).join('');
+            document.getElementById('versionTabsInModal').innerHTML = tabsHtml;
+
+            if (item.image) {
+                document.getElementById('imagePreview').src = item.image;
+                document.getElementById('imagePreviewContainer').classList.remove('hidden');
+                currentBase64Image = item.image;
+            } else {
+                document.getElementById('imagePreviewContainer').classList.add('hidden');
+                currentBase64Image = '';
+            }
+
+            document.getElementById('modalTitle').innerHTML = `<i class="fa-solid fa-gear"></i> Pengaturan & Kode: ${item.title}`;
+            document.getElementById('canvasModal').classList.remove('hidden');
+            document.getElementById('canvasModal').classList.add('flex');
+        }
+
+        function switchModalVersion(canvasIdx, versionIdx) {
+            canvases[canvasIdx].activeVersionIdx = versionIdx;
+            localStorage.setItem('zk_vault_canvases_clean', JSON.stringify(canvases));
+            editCanvas(canvasIdx); // Reload modal with selected version data
+            renderCanvases();
+        }
+
+        function deleteCanvas(index) {
+            if (confirm('Yakin ingin menghapus project ini beserta seluruh riwayat kodenya?')) {
+                canvases.splice(index, 1);
+                localStorage.setItem('zk_vault_canvases_clean', JSON.stringify(canvases));
+                renderCanvases();
+            }
+        }
+
+        renderCanvases();
+    </script>
+</body>
+</html>
