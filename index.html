@@ -1,1545 +1,1850 @@
 <!DOCTYPE html>
-<html lang="id" class="dark">
+<html lang="en" class="h-full bg-slate-950">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZK Vault - Gemini Canvas Tracker</title>
+
+    <title>ZK Vault - Online Canvas Tracker</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        darker: '#090d16',
-                        card: '#111827',
-                        border: '#1f293d',
-                    }
-                }
-            }
-        }
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
 
-    <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
     <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-family: Inter, sans-serif;
+            background:
+                radial-gradient(
+                    circle at top,
+                    rgba(16,185,129,.10),
+                    transparent 35%
+                ),
+                #020617;
+            color: #e2e8f0;
         }
 
-        code,
-        pre {
-            font-family: 'JetBrains Mono', monospace;
+        .glass {
+            background: rgba(15,23,42,.72);
+            border: 1px solid rgba(148,163,184,.12);
+            backdrop-filter: blur(16px);
         }
 
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
+        .input {
+            width: 100%;
+            background: #020617;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 11px 13px;
+            color: white;
+            outline: none;
         }
 
-        ::-webkit-scrollbar-track {
-            background: #090d16;
+        .input:focus {
+            border-color: #10b981;
+            box-shadow: 0 0 0 2px rgba(16,185,129,.12);
         }
 
-        ::-webkit-scrollbar-thumb {
-            background: #374151;
-            border-radius: 4px;
+        .btn {
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-weight: 600;
+            transition: .2s;
         }
 
-        ::-webkit-scrollbar-thumb:hover {
-            background: #4b5563;
+        .btn:hover {
+            transform: translateY(-1px);
         }
 
-        .code-container {
-            display: flex;
+        .btn-green {
+            background: #10b981;
+            color: #022c22;
         }
 
-        .line-numbers {
-            text-align: right;
-            user-select: none;
-            padding: 0.75rem 0.5rem;
-            color: #4b5563;
-            border-right: 1px solid #1f293d;
-            font-size: 11px;
-            line-height: 1.5;
-            background-color: #0d121d;
+        .btn-dark {
+            background: #1e293b;
+            color: #e2e8f0;
         }
 
-        .code-content {
-            flex: 1;
-            padding: 0.75rem;
-            overflow-x: auto;
-            font-size: 11px;
-            line-height: 1.5;
-            color: #34d399;
+        .btn-red {
+            background: #7f1d1d;
+            color: #fecaca;
         }
 
-        .backup-glow:hover {
-            box-shadow: 0 0 20px rgba(16,185,129,.12);
+        .modal-bg {
+            background: rgba(0,0,0,.72);
+            backdrop-filter: blur(8px);
         }
+
+        textarea {
+            resize: vertical;
+        }
+
+        .project-card {
+            transition: .2s;
+        }
+
+        .project-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(16,185,129,.35);
+        }
+
+        .thumb {
+            width: 100%;
+            aspect-ratio: 16/9;
+            object-fit: cover;
+            background: #020617;
+        }
+
+        .hidden-force {
+            display: none !important;
+        }
+
     </style>
 </head>
 
-<body class="bg-darker text-slate-100 min-h-screen selection:bg-indigo-500 selection:text-white">
+<body class="min-h-screen">
 
-    <!-- Background Glow -->
-    <div class="fixed top-0 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
+<!-- LOGIN -->
 
-    <div class="fixed bottom-0 right-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
+<div id="loginScreen"
+     class="fixed inset-0 z-[100] flex items-center justify-center p-5">
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+    <div class="absolute inset-0 bg-slate-950"></div>
 
-        <!-- HEADER -->
-        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 pb-6 border-b border-slate-800/80 gap-4">
+    <div class="glass relative w-full max-w-md rounded-2xl p-7 shadow-2xl">
 
-            <div class="flex items-center space-x-3">
+        <div class="text-center mb-7">
 
-                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-indigo-500/25">
-                    <i class="fa-solid fa-code-merge text-xl text-white"></i>
-                </div>
+            <div
+                class="mx-auto mb-4 w-14 h-14 rounded-2xl bg-emerald-500/10
+                       flex items-center justify-center text-emerald-400 text-2xl">
 
-                <div>
-                    <h1 class="text-2xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-400 bg-clip-text text-transparent">
-                        ZK Vault
-                    </h1>
-
-                    <p class="text-xs text-slate-400">
-                        Gemini Canvas Visual Gallery & Hidden Code Settings
-                    </p>
-                </div>
+                <i class="fa-solid fa-vault"></i>
 
             </div>
 
-            <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+            <h1 class="text-2xl font-extrabold">
+                ZK Vault
+            </h1>
 
-                <!-- SEARCH -->
-                <div class="relative flex-1 md:w-56">
+            <p class="text-slate-400 text-sm mt-2">
+                Private Online Canvas Vault
+            </p>
 
-                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-500">
-                        <i class="fa-solid fa-search text-xs"></i>
-                    </span>
+        </div>
 
-                    <input
-                        type="text"
-                        id="searchInput"
-                        oninput="renderCanvases()"
-                        placeholder="Cari project..."
-                        class="w-full bg-card border border-border rounded-xl pl-9 pr-4 py-2 text-xs focus:outline-none focus:border-indigo-500 transition"
-                    >
+        <div class="space-y-4">
 
-                </div>
+            <input
+                id="loginEmail"
+                type="email"
+                class="input"
+                placeholder="Email">
 
-                <!-- BACKUP -->
-                <button
-                    onclick="exportVaultBackup()"
-                    class="backup-glow bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-300 border border-emerald-500/25 px-3 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 whitespace-nowrap cursor-pointer"
-                >
-                    <i class="fa-solid fa-download"></i>
-                    Backup
-                </button>
+            <input
+                id="loginPassword"
+                type="password"
+                class="input"
+                placeholder="Password">
 
-                <!-- RESTORE -->
-                <button
-                    onclick="document.getElementById('restoreInput').click()"
-                    class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-border px-3 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 whitespace-nowrap cursor-pointer"
-                >
-                    <i class="fa-solid fa-upload"></i>
-                    Restore
-                </button>
+            <button
+                onclick="login()"
+                class="btn btn-green w-full">
 
-                <input
-                    id="restoreInput"
-                    type="file"
-                    accept=".json,application/json"
-                    class="hidden"
-                    onchange="importVaultBackup(event)"
-                >
+                <i class="fa-solid fa-right-to-bracket mr-2"></i>
+                Login
 
-                <!-- NEW PROJECT -->
-                <button
-                    onclick="openModal()"
-                    class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/20 transition flex items-center gap-2 whitespace-nowrap cursor-pointer"
-                >
-                    <i class="fa-solid fa-plus"></i>
-                    Canvas Baru
-                </button>
+            </button>
 
-            </div>
+            <button
+                onclick="registerAccount()"
+                class="btn btn-dark w-full">
 
-        </header>
+                Buat Akun
+
+            </button>
+
+        </div>
+
+        <div
+            id="loginStatus"
+            class="text-center text-sm mt-5 text-slate-400">
+        </div>
+
+    </div>
+
+</div>
 
 
-        <!-- INFO BACKUP -->
-        <div class="mb-6 p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 flex items-start gap-3">
+<!-- APP -->
 
-            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
-                <i class="fa-solid fa-shield-halved text-emerald-400 text-sm"></i>
-            </div>
+<div id="app"
+     class="hidden min-h-screen">
+
+    <!-- HEADER -->
+
+    <header
+        class="sticky top-0 z-40 border-b border-slate-800/80
+               bg-slate-950/90 backdrop-blur-xl">
+
+        <div
+            class="max-w-7xl mx-auto px-4 py-4
+                   flex flex-col lg:flex-row
+                   lg:items-center lg:justify-between gap-4">
 
             <div>
-                <p class="text-xs font-semibold text-emerald-300">
-                    Backup Project
-                </p>
 
-                <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">
-                    Gunakan tombol <b class="text-slate-300">Backup</b> untuk menyimpan seluruh project,
-                    thumbnail, link Canvas, kode, dan riwayat versi ke file JSON.
-                    Jangan hapus file backup tersebut.
-                </p>
-            </div>
-
-        </div>
-
-
-        <!-- GRID -->
-        <div
-            id="canvasGrid"
-            class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start"
-        >
-        </div>
-
-    </div>
-
-
-    <!-- MODAL PROJECT -->
-    <div
-        id="canvasModal"
-        class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50"
-    >
-
-        <div class="bg-card border border-border w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-
-            <div class="px-6 py-4 border-b border-border flex justify-between items-center bg-slate-900/50">
-
-                <h2
-                    id="modalTitle"
-                    class="text-sm font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-2"
-                >
-                    <i class="fa-solid fa-gear"></i>
-                    Pengaturan & Kode Project
-                </h2>
-
-                <button
-                    onclick="closeModal()"
-                    class="text-slate-400 hover:text-white transition cursor-pointer"
-                >
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
-
-            </div>
-
-
-            <form
-                id="canvasForm"
-                onsubmit="saveCanvas(event)"
-                class="p-6 space-y-4 overflow-y-auto flex-1"
-            >
-
-                <input
-                    type="hidden"
-                    id="canvasId"
-                >
-
-
-                <!-- TITLE + LINK -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                    <div>
-
-                        <label class="block text-xs font-medium text-slate-400 mb-1">
-                            Judul Project *
-                        </label>
-
-                        <input
-                            type="text"
-                            id="title"
-                            required
-                            placeholder="Misal: Kalkulator AI"
-                            class="w-full bg-darker border border-border rounded-xl p-2.5 text-xs focus:outline-none focus:border-indigo-500"
-                        >
-
-                    </div>
-
-
-                    <div>
-
-                        <label class="block text-xs font-medium text-slate-400 mb-1">
-                            Link Gemini Canvas
-                        </label>
-
-                        <input
-                            type="url"
-                            id="canvasLink"
-                            placeholder="https://gemini.google.com/app/..."
-                            class="w-full bg-darker border border-border rounded-xl p-2.5 text-xs focus:outline-none focus:border-indigo-500"
-                        >
-
-                    </div>
-
-                </div>
-
-
-                <!-- IMAGE -->
-                <div>
-
-                    <label class="block text-xs font-medium text-slate-400 mb-1">
-                        Ganti / Upload Thumbnail Preview
-                    </label>
-
-                    <input
-                        type="file"
-                        id="imageInput"
-                        accept="image/*"
-                        class="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer bg-darker border border-border rounded-xl"
-                    >
+                <div class="flex items-center gap-3">
 
                     <div
-                        id="imagePreviewContainer"
-                        class="mt-2 hidden"
-                    >
+                        class="w-10 h-10 rounded-xl
+                               bg-emerald-500/10
+                               flex items-center justify-center
+                               text-emerald-400">
 
-                        <img
-                            id="imagePreview"
-                            src=""
-                            alt="Preview"
-                            class="h-28 w-full object-cover rounded-xl border border-border"
-                        >
+                        <i class="fa-solid fa-vault"></i>
 
                     </div>
-
-                </div>
-
-
-                <!-- VERSION -->
-                <div class="p-4 bg-darker/60 border border-border rounded-xl space-y-3">
-
-                    <div class="flex justify-between items-center gap-3 flex-wrap">
-
-                        <span class="text-xs font-bold text-indigo-300">
-
-                            <i class="fa-solid fa-code mr-1"></i>
-
-                            Editor Kode Versi Aktif
-
-                        </span>
-
-                        <div
-                            id="versionTabsInModal"
-                            class="flex items-center gap-1 flex-wrap"
-                        >
-                        </div>
-
-                    </div>
-
 
                     <div>
 
-                        <label class="block text-xs font-medium text-slate-400 mb-1">
-                            Catatan Update / Log Versi Ini
-                        </label>
+                        <h1 class="font-extrabold text-lg">
+                            ZK Vault
+                        </h1>
 
-                        <input
-                            type="text"
-                            id="updateLog"
-                            placeholder="Contoh: v1.0 - Rilis pertama"
-                            class="w-full bg-card border border-border rounded-xl p-2 text-xs focus:outline-none focus:border-indigo-500"
-                        >
-
-                    </div>
-
-
-                    <div>
-
-                        <div class="flex justify-between items-center mb-1 gap-2">
-
-                            <label class="text-xs font-medium text-slate-400">
-                                Potongan Kode
-                            </label>
-
-                            <button
-                                type="button"
-                                onclick="addNewVersionFromModal()"
-                                class="text-[10px] bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 px-2 py-1 rounded-lg hover:bg-indigo-600/30 transition cursor-pointer"
-                            >
-                                <i class="fa-solid fa-plus"></i>
-                                Simpan Sebagai Versi Baru
-                            </button>
-
-                        </div>
-
-
-                        <textarea
-                            id="codeSnippet"
-                            rows="8"
-                            placeholder="Paste kode utama di sini..."
-                            class="w-full bg-card font-mono text-xs border border-border rounded-xl p-2.5 focus:outline-none focus:border-indigo-500"
-                        ></textarea>
-
-                    </div>
-
-                </div>
-
-
-                <!-- BUTTON -->
-                <div class="flex justify-end space-x-3 pt-3 border-t border-border">
-
-                    <button
-                        type="button"
-                        onclick="closeModal()"
-                        class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-medium transition cursor-pointer"
-                    >
-                        Batal
-                    </button>
-
-                    <button
-                        type="submit"
-                        class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/20 transition cursor-pointer"
-                    >
-                        Simpan Perubahan
-                    </button>
-
-                </div>
-
-            </form>
-
-        </div>
-
-    </div>
-
-
-    <!-- JAVASCRIPT -->
-    <script>
-
-        /*
-        ==========================================================
-        ZK VAULT DATA
-        ==========================================================
-        PENTING:
-        Key ini SAMA dengan versi lama kamu.
-        Jadi project lama tetap terbaca.
-        ==========================================================
-        */
-
-        const VAULT_STORAGE_KEY = 'zk_vault_canvases_clean';
-
-        let canvases =
-            JSON.parse(
-                localStorage.getItem(VAULT_STORAGE_KEY)
-            ) || [];
-
-        let currentBase64Image = '';
-
-
-        /*
-        ==========================================================
-        RENDER PROJECT
-        ==========================================================
-        */
-
-        function renderCanvases() {
-
-            const searchKeyword =
-                document
-                    .getElementById('searchInput')
-                    .value
-                    .toLowerCase();
-
-            const grid =
-                document.getElementById('canvasGrid');
-
-
-            const filtered =
-                canvases.filter(item => {
-
-                    const title =
-                        (item.title || '').toLowerCase();
-
-                    const link =
-                        (item.canvasLink || '').toLowerCase();
-
-                    return (
-                        title.includes(searchKeyword) ||
-                        link.includes(searchKeyword)
-                    );
-
-                });
-
-
-            if (filtered.length === 0) {
-
-                grid.innerHTML = `
-                    <div class="col-span-full text-center py-16 bg-card border border-dashed border-border rounded-2xl">
-
-                        <i class="fa-solid fa-photo-film text-4xl text-slate-600 mb-3"></i>
-
-                        <p class="text-sm text-slate-400">
-                            Belum ada project tersimpan
-                            atau pencarian tidak ditemukan.
+                        <p class="text-xs text-slate-500">
+                            Online Canvas Tracker
                         </p>
 
                     </div>
-                `;
 
-                return;
+                </div>
+
+            </div>
+
+
+            <div class="flex flex-wrap gap-2">
+
+                <button
+                    onclick="backupVault()"
+                    class="btn btn-dark">
+
+                    <i class="fa-solid fa-download mr-1"></i>
+                    Backup
+
+                </button>
+
+                <button
+                    onclick="document.getElementById('restoreFile').click()"
+                    class="btn btn-dark">
+
+                    <i class="fa-solid fa-upload mr-1"></i>
+                    Restore
+
+                </button>
+
+                <input
+                    id="restoreFile"
+                    type="file"
+                    accept=".json"
+                    class="hidden"
+                    onchange="restoreVault(event)">
+
+                <button
+                    onclick="openNewProject()"
+                    class="btn btn-green">
+
+                    <i class="fa-solid fa-plus mr-1"></i>
+                    Canvas Baru
+
+                </button>
+
+                <button
+                    onclick="logout()"
+                    class="btn btn-red">
+
+                    <i class="fa-solid fa-right-from-bracket mr-1"></i>
+                    Logout
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </header>
+
+
+    <!-- MAIN -->
+
+    <main class="max-w-7xl mx-auto px-4 py-7">
+
+        <div
+            class="glass rounded-2xl p-4 mb-6
+                   flex flex-col md:flex-row gap-3
+                   md:items-center md:justify-between">
+
+            <div>
+
+                <div class="font-semibold">
+                    Cloud Vault
+                </div>
+
+                <div
+                    id="syncStatus"
+                    class="text-xs text-slate-500 mt-1">
+
+                    Menghubungkan...
+
+                </div>
+
+            </div>
+
+            <div class="relative w-full md:w-80">
+
+                <i
+                    class="fa-solid fa-search absolute left-3 top-3.5
+                           text-slate-500">
+                </i>
+
+                <input
+                    id="searchInput"
+                    oninput="renderProjects()"
+                    class="input pl-10"
+                    placeholder="Cari project...">
+
+            </div>
+
+        </div>
+
+
+        <!-- PROJECT LIST -->
+
+        <div
+            id="projectGrid"
+            class="grid grid-cols-1 sm:grid-cols-2
+                   lg:grid-cols-3 xl:grid-cols-4 gap-5">
+
+        </div>
+
+
+        <div
+            id="emptyState"
+            class="hidden text-center py-20">
+
+            <div
+                class="text-5xl text-slate-700 mb-5">
+
+                <i class="fa-solid fa-box-open"></i>
+
+            </div>
+
+            <h2 class="text-lg font-bold">
+                Belum ada project
+            </h2>
+
+            <p class="text-slate-500 text-sm mt-2">
+                Tambahkan Canvas pertama Anda.
+            </p>
+
+        </div>
+
+    </main>
+
+</div>
+
+
+<!-- PROJECT MODAL -->
+
+<div
+    id="projectModal"
+    class="hidden fixed inset-0 z-50 modal-bg
+           flex items-center justify-center p-4">
+
+    <div
+        class="glass w-full max-w-3xl
+               max-h-[92vh] overflow-y-auto
+               rounded-2xl p-6">
+
+        <div
+            class="flex items-center justify-between mb-6">
+
+            <h2
+                id="modalTitle"
+                class="text-xl font-bold">
+
+                Canvas Baru
+
+            </h2>
+
+            <button
+                onclick="closeModal()"
+                class="text-slate-400 hover:text-white">
+
+                <i class="fa-solid fa-xmark text-xl"></i>
+
+            </button>
+
+        </div>
+
+
+        <input
+            type="hidden"
+            id="projectId">
+
+
+        <div class="space-y-5">
+
+            <div>
+
+                <label class="block text-sm font-semibold mb-2">
+                    Nama Project
+                </label>
+
+                <input
+                    id="projectTitle"
+                    class="input"
+                    placeholder="Contoh: ZK Metadata">
+
+            </div>
+
+
+            <div>
+
+                <label class="block text-sm font-semibold mb-2">
+                    Link Gemini / Canvas
+                </label>
+
+                <input
+                    id="canvasLink"
+                    class="input"
+                    placeholder="https://...">
+
+            </div>
+
+
+            <div>
+
+                <label class="block text-sm font-semibold mb-2">
+                    Thumbnail
+                </label>
+
+                <input
+                    id="thumbnailInput"
+                    type="file"
+                    accept="image/*"
+                    class="input">
+
+                <div
+                    id="thumbnailPreview"
+                    class="mt-3">
+                </div>
+
+            </div>
+
+
+            <div>
+
+                <label class="block text-sm font-semibold mb-2">
+                    Version / Code
+                </label>
+
+                <input
+                    id="versionName"
+                    class="input mb-3"
+                    placeholder="Contoh: V1">
+
+                <textarea
+                    id="versionLog"
+                    class="input mb-3"
+                    rows="3"
+                    placeholder="Catatan perubahan..."></textarea>
+
+                <textarea
+                    id="versionCode"
+                    class="input font-mono text-xs"
+                    rows="12"
+                    placeholder="Paste code Canvas di sini..."></textarea>
+
+            </div>
+
+
+            <div
+                id="existingHistory"
+                class="space-y-2">
+            </div>
+
+
+            <div
+                class="flex flex-wrap justify-end gap-2 pt-3">
+
+                <button
+                    onclick="closeModal()"
+                    class="btn btn-dark">
+
+                    Batal
+
+                </button>
+
+                <button
+                    onclick="saveProject()"
+                    class="btn btn-green">
+
+                    <i class="fa-solid fa-cloud-arrow-up mr-1"></i>
+                    Simpan Online
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+/* =========================================================
+   SUPABASE CONFIG
+   ========================================================= */
+
+const SUPABASE_URL =
+    "MASUKKAN_PROJECT_URL_ANDA";
+
+const SUPABASE_ANON_KEY =
+    "MASUKKAN_ANON_KEY_ANDA";
+
+
+const { createClient } = supabase;
+
+const db = createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+);
+
+
+/* =========================================================
+   LOCAL STORAGE
+   ========================================================= */
+
+const VAULT_STORAGE_KEY =
+    "zk_vault_canvases_clean";
+
+
+let projects = [];
+
+let currentUser = null;
+
+let editingProject = null;
+
+
+/* =========================================================
+   INIT
+   ========================================================= */
+
+async function init() {
+
+    if (
+        SUPABASE_URL.includes("MASUKKAN_") ||
+        SUPABASE_ANON_KEY.includes("MASUKKAN_")
+    ) {
+
+        document.getElementById("loginStatus").innerHTML =
+            `<span class="text-red-400">
+                Isi SUPABASE_URL dan SUPABASE_ANON_KEY terlebih dahulu.
+             </span>`;
+
+        return;
+    }
+
+
+    const {
+        data: {
+            session
+        }
+    } = await db.auth.getSession();
+
+
+    if (session) {
+
+        currentUser =
+            session.user;
+
+        showApp();
+
+        await loadProjects();
+
+    }
+
+
+    db.auth.onAuthStateChange(
+        async (event, session) => {
+
+            if (session) {
+
+                currentUser =
+                    session.user;
+
+                showApp();
+
+                await loadProjects();
+
+            } else {
+
+                currentUser =
+                    null;
+
+                showLogin();
+
             }
 
-
-            grid.innerHTML =
-                filtered.map(item => {
-
-                    const realIndex =
-                        canvases.indexOf(item);
-
-
-                    const history =
-                        item.history ||
-                        [
-                            {
-                                version: 'v1.0',
-                                log: item.updateLog || 'Initial',
-                                code: item.codeSnippet || '',
-                                date: item.date || ''
-                            }
-                        ];
-
-
-                    const activeVersionIdx =
-                        (
-                            item.activeVersionIdx !== undefined &&
-                            item.activeVersionIdx < history.length
-                        )
-                            ? item.activeVersionIdx
-                            : history.length - 1;
-
-
-                    const activeVersionData =
-                        history[activeVersionIdx];
-
-
-                    return `
-
-                        <div class="bg-card border border-border rounded-3xl overflow-hidden flex flex-col justify-between shadow-xl shadow-black/30 hover:border-indigo-900 transition">
-
-                            <div>
-
-                                <!-- IMAGE -->
-
-                                <div class="relative w-full bg-darker">
-
-                                    ${
-                                        item.image
-
-                                        ?
-
-                                        `
-
-                                        <div class="w-full max-h-80 overflow-hidden bg-black/40 flex items-center justify-center border-b border-border">
-
-                                            <img
-                                                src="${item.image}"
-                                                alt="${escapeHtml(item.title || '')}"
-                                                class="w-full h-auto object-cover"
-                                            >
-
-                                        </div>
-
-                                        `
-
-                                        :
-
-                                        `
-
-                                        <div class="py-12 bg-slate-900 text-center text-slate-500 text-xs italic border-b border-border">
-
-                                            Tanpa Thumbnail Gambar
-
-                                        </div>
-
-                                        `
-                                    }
-
-
-                                    <!-- VERSION TABS -->
-
-                                    <div class="absolute top-3 right-3 flex items-center gap-1 bg-slate-950/80 backdrop-blur-md p-1.5 rounded-xl border border-white/10 z-10 shadow-lg">
-
-                                        ${
-                                            history.map((ver, vIdx) => `
-
-                                                <button
-                                                    type="button"
-                                                    onclick="switchVersion(${realIndex},${vIdx})"
-                                                    class="px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold transition cursor-pointer ${
-                                                        vIdx === activeVersionIdx
-                                                            ? 'bg-indigo-600 text-white shadow'
-                                                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                                                    }"
-                                                >
-                                                    ${escapeHtml(ver.version)}
-                                                </button>
-
-                                            `).join('')
-                                        }
-
-                                    </div>
-
-                                </div>
-
-
-                                <!-- CONTENT -->
-
-                                <div class="p-5 space-y-3">
-
-                                    <div class="flex justify-between items-start gap-2">
-
-                                        <h3 class="font-bold text-base text-white">
-                                            ${escapeHtml(item.title || 'Untitled')}
-                                        </h3>
-
-                                        <span class="text-[10px] text-slate-400 bg-slate-800 px-2 py-0.5 rounded shrink-0">
-
-                                            ${escapeHtml(activeVersionData.date || item.date || '')}
-
-                                        </span>
-
-                                    </div>
-
-
-                                    <!-- LOG -->
-
-                                    <div class="text-xs text-slate-300 bg-darker/60 border border-border rounded-xl p-2.5 flex items-center gap-2">
-
-                                        <span class="text-indigo-400 font-bold uppercase text-[9px] bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20 shrink-0">
-
-                                            ${escapeHtml(activeVersionData.version)}
-
-                                        </span>
-
-                                        <span class="truncate italic">
-
-                                            "${escapeHtml(activeVersionData.log || 'Tanpa catatan')}"
-
-                                        </span>
-
-                                    </div>
-
-
-                                    <!-- GEMINI -->
-
-                                    ${
-                                        item.canvasLink
-
-                                        ?
-
-                                        `
-
-                                        <a
-                                            href="${escapeAttribute(item.canvasLink)}"
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            class="flex w-full items-center justify-center gap-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 px-5 rounded-2xl shadow-lg shadow-blue-600/20 transition-all transform hover:-translate-y-0.5 text-xs uppercase tracking-wider"
-                                        >
-
-                                            <img
-                                                src="https://www.gstatic.com/lamda/images/gemini_favicon_f39189c6f0d2a18137982.png"
-                                                alt="Gemini"
-                                                class="w-4 h-4"
-                                            >
-
-                                            Buka Gemini Canvas
-
-                                            <i class="fa-solid fa-arrow-up-right-from-square text-[10px] opacity-70"></i>
-
-                                        </a>
-
-                                        `
-
-                                        : ''
-
-                                    }
-
-                                </div>
-
-                            </div>
-
-
-                            <!-- FOOTER -->
-
-                            <div class="px-5 py-3 bg-darker/50 border-t border-border flex justify-between items-center text-xs">
-
-                                <button
-                                    type="button"
-                                    onclick="editCanvas(${realIndex})"
-                                    class="text-indigo-400 hover:text-indigo-300 transition flex items-center gap-1.5 font-medium cursor-pointer"
-                                >
-
-                                    <i class="fa-solid fa-gear text-xs"></i>
-
-                                    Pengaturan & Kode
-
-                                </button>
-
-
-                                <button
-                                    type="button"
-                                    onclick="deleteCanvas(${realIndex})"
-                                    class="text-slate-500 hover:text-red-400 transition cursor-pointer"
-                                >
-
-                                    <i class="fa-solid fa-trash text-xs"></i>
-
-                                    Hapus
-
-                                </button>
-
-                            </div>
-
-                        </div>
-
-                    `;
-
-                }).join('');
-
         }
+    );
+
+}
 
 
-        /*
-        ==========================================================
-        ESCAPE HTML
-        ==========================================================
-        */
-
-        function escapeHtml(value) {
-
-            return String(value ?? '')
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
-
-        }
+init();
 
 
-        function escapeAttribute(value) {
+/* =========================================================
+   LOGIN
+   ========================================================= */
 
-            return escapeHtml(value);
+async function login() {
 
-        }
+    const email =
+        document.getElementById("loginEmail").value.trim();
 
-
-        /*
-        ==========================================================
-        OPEN MODAL
-        ==========================================================
-        */
-
-        function openModal() {
-
-            document
-                .getElementById('canvasModal')
-                .classList.remove('hidden');
-
-            document
-                .getElementById('canvasModal')
-                .classList.add('flex');
+    const password =
+        document.getElementById("loginPassword").value;
 
 
-            document
-                .getElementById('canvasForm')
-                .reset();
+    if (!email || !password) {
+
+        setLoginStatus(
+            "Email dan password wajib diisi.",
+            true
+        );
+
+        return;
+    }
 
 
-            document
-                .getElementById('canvasId')
-                .value = '';
+    setLoginStatus("Login...");
 
 
-            document
-                .getElementById('modalTitle')
-                .innerHTML =
-                `
-                    <i class="fa-solid fa-gear"></i>
-                    Tambah Project Canvas Baru
-                `;
+    const {
+        error
+    } = await db.auth.signInWithPassword({
+
+        email,
+        password
+
+    });
 
 
-            document
-                .getElementById('imagePreviewContainer')
-                .classList.add('hidden');
+    if (error) {
+
+        setLoginStatus(
+            error.message,
+            true
+        );
+
+    }
+
+}
 
 
-            document
-                .getElementById('versionTabsInModal')
-                .innerHTML =
-                `
-                    <span class="text-[10px] text-slate-500 font-mono">
-                        v1.0 (Baru)
-                    </span>
-                `;
+async function registerAccount() {
+
+    const email =
+        document.getElementById("loginEmail").value.trim();
+
+    const password =
+        document.getElementById("loginPassword").value;
 
 
-            currentBase64Image = '';
+    if (!email || !password) {
 
-        }
+        setLoginStatus(
+            "Isi email dan password terlebih dahulu.",
+            true
+        );
 
-
-        /*
-        ==========================================================
-        CLOSE MODAL
-        ==========================================================
-        */
-
-        function closeModal() {
-
-            document
-                .getElementById('canvasModal')
-                .classList.add('hidden');
-
-            document
-                .getElementById('canvasModal')
-                .classList.remove('flex');
-
-        }
+        return;
+    }
 
 
-        /*
-        ==========================================================
-        IMAGE UPLOAD
-        ==========================================================
-        */
+    if (password.length < 6) {
 
-        const imageInput =
-            document.getElementById('imageInput');
+        setLoginStatus(
+            "Password minimal 6 karakter.",
+            true
+        );
 
-
-        imageInput.addEventListener(
-            'change',
-            function(e) {
-
-                const file =
-                    e.target.files[0];
-
-                if (!file) return;
+        return;
+    }
 
 
-                const reader =
-                    new FileReader();
+    setLoginStatus("Membuat akun...");
 
 
-                reader.onload =
-                    function(uploadEvent) {
+    const {
+        error
+    } = await db.auth.signUp({
 
-                        currentBase64Image =
-                            uploadEvent.target.result;
+        email,
+        password
 
-
-                        document
-                            .getElementById('imagePreview')
-                            .src =
-                            currentBase64Image;
+    });
 
 
-                        document
-                            .getElementById('imagePreviewContainer')
-                            .classList
-                            .remove('hidden');
+    if (error) {
 
-                    };
+        setLoginStatus(
+            error.message,
+            true
+        );
+
+        return;
+    }
 
 
-                reader.readAsDataURL(file);
+    setLoginStatus(
+        "Akun dibuat. Jika email confirmation aktif, cek email Anda."
+    );
 
+}
+
+
+function setLoginStatus(
+    message,
+    error = false
+) {
+
+    const el =
+        document.getElementById("loginStatus");
+
+    el.textContent =
+        message;
+
+    el.className =
+        "text-center text-sm mt-5 " +
+        (error
+            ? "text-red-400"
+            : "text-emerald-400");
+
+}
+
+
+async function logout() {
+
+    await db.auth.signOut();
+
+}
+
+
+/* =========================================================
+   SCREEN
+   ========================================================= */
+
+function showApp() {
+
+    document
+        .getElementById("loginScreen")
+        .classList.add("hidden");
+
+    document
+        .getElementById("app")
+        .classList.remove("hidden");
+
+}
+
+
+function showLogin() {
+
+    document
+        .getElementById("loginScreen")
+        .classList.remove("hidden");
+
+    document
+        .getElementById("app")
+        .classList.add("hidden");
+
+}
+
+
+/* =========================================================
+   LOAD ONLINE PROJECTS
+   ========================================================= */
+
+async function loadProjects() {
+
+    setSyncStatus(
+        "Mengambil data dari cloud..."
+    );
+
+
+    const {
+        data,
+        error
+    } = await db
+        .from("projects")
+        .select("*")
+        .order(
+            "updated_at",
+            {
+                ascending: false
             }
         );
 
 
-        /*
-        ==========================================================
-        SAVE PROJECT
-        ==========================================================
-        */
+    if (error) {
 
-        function saveCanvas(e) {
+        console.error(error);
 
-            e.preventDefault();
+        setSyncStatus(
+            "Gagal mengambil data: " +
+            error.message,
+            true
+        );
 
-
-            const id =
-                document
-                    .getElementById('canvasId')
-                    .value;
+        return;
+    }
 
 
-            const title =
-                document
-                    .getElementById('title')
-                    .value
-                    .trim();
+    projects =
+        data.map(row => ({
+
+            id:
+                row.id,
+
+            title:
+                row.title,
+
+            canvasLink:
+                row.canvas_link,
+
+            image:
+                row.image,
+
+            history:
+                row.history || [],
+
+            activeVersionIdx:
+                row.active_version_idx || 0,
+
+            created_at:
+                row.created_at,
+
+            updated_at:
+                row.updated_at
+
+        }));
 
 
-            const canvasLink =
-                document
-                    .getElementById('canvasLink')
-                    .value
-                    .trim();
+    renderProjects();
 
 
-            const codeSnippet =
-                document
-                    .getElementById('codeSnippet')
-                    .value;
+    setSyncStatus(
+        `${projects.length} project tersimpan online`
+    );
+
+}
 
 
-            const updateLog =
-                document
-                    .getElementById('updateLog')
-                    .value
-                    .trim() ||
-                'Update info';
+/* =========================================================
+   RENDER
+   ========================================================= */
+
+function renderProjects() {
+
+    const grid =
+        document.getElementById("projectGrid");
+
+    const empty =
+        document.getElementById("emptyState");
 
 
-            const date =
-                new Date()
-                    .toLocaleDateString(
-                        'id-ID',
-                        {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric'
-                        }
-                    );
+    const query =
+        document
+            .getElementById("searchInput")
+            .value
+            .toLowerCase()
+            .trim();
 
 
-            /*
-            NEW
-            */
+    const filtered =
+        projects.filter(project =>
 
-            if (id === '') {
+            project.title
+                .toLowerCase()
+                .includes(query)
 
-                const newCanvas = {
-
-                    title,
-
-                    canvasLink,
-
-                    image:
-                        currentBase64Image,
-
-                    history: [
-
-                        {
-
-                            version: 'v1.0',
-
-                            log:
-                                updateLog,
-
-                            code:
-                                codeSnippet,
-
-                            date:
-                                date
-
-                        }
-
-                    ],
-
-                    activeVersionIdx: 0
-
-                };
+        );
 
 
-                canvases.unshift(newCanvas);
+    grid.innerHTML = "";
 
+
+    if (!filtered.length) {
+
+        empty.classList.remove("hidden");
+
+        return;
+
+    }
+
+
+    empty.classList.add("hidden");
+
+
+    filtered.forEach(project => {
+
+        const historyCount =
+            project.history?.length || 0;
+
+
+        const card =
+            document.createElement("div");
+
+
+        card.className =
+            "project-card glass rounded-2xl overflow-hidden";
+
+
+        card.innerHTML = `
+
+            ${
+                project.image
+                ?
+                `<img
+                    src="${escapeAttr(project.image)}"
+                    class="thumb">`
+                :
+                `<div
+                    class="thumb flex items-center
+                           justify-center text-slate-700
+                           text-4xl">
+
+                    <i class="fa-solid fa-code"></i>
+
+                 </div>`
             }
 
 
-            /*
-            EDIT
-            */
+            <div class="p-4">
 
-            else {
+                <div
+                    class="font-bold truncate"
+                    title="${escapeAttr(project.title)}">
 
-                const item =
-                    canvases[Number(id)];
+                    ${escapeHtml(project.title)}
 
+                </div>
 
-                if (!item) return;
 
+                <div
+                    class="text-xs text-slate-500 mt-1">
 
-                item.title =
-                    title;
+                    ${historyCount}
+                    version
 
+                </div>
 
-                item.canvasLink =
-                    canvasLink;
 
+                <div
+                    class="flex flex-wrap gap-2 mt-4">
 
-                if (currentBase64Image) {
+                    ${
+                        project.canvasLink
+                        ?
+                        `<button
+                            onclick="openCanvas('${project.id}')"
+                            class="btn btn-green text-xs">
 
-                    item.image =
-                        currentBase64Image;
+                            <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i>
+                            Canvas
 
-                }
+                         </button>`
+                        :
+                        ""
+                    }
 
 
-                if (!item.history) {
+                    <button
+                        onclick="editProject('${project.id}')"
+                        class="btn btn-dark text-xs">
 
-                    item.history = [
+                        <i class="fa-solid fa-pen mr-1"></i>
+                        Edit
 
-                        {
+                    </button>
 
-                            version: 'v1.0',
 
-                            log: 'Initial',
+                    <button
+                        onclick="deleteProject('${project.id}')"
+                        class="btn btn-red text-xs">
 
-                            code: '',
+                        <i class="fa-solid fa-trash mr-1"></i>
+                        Hapus
 
-                            date: date
+                    </button>
 
-                        }
+                </div>
 
-                    ];
+            </div>
 
-                }
+        `;
 
 
-                const activeIdx =
-                    item.activeVersionIdx || 0;
+        grid.appendChild(card);
 
+    });
 
-                if (item.history[activeIdx]) {
+}
 
-                    item.history[activeIdx].code =
-                        codeSnippet;
 
-                    item.history[activeIdx].log =
-                        updateLog;
+/* =========================================================
+   NEW PROJECT
+   ========================================================= */
 
-                }
+function openNewProject() {
 
-            }
+    editingProject = null;
 
 
-            saveVault();
+    document.getElementById("modalTitle")
+        .textContent = "Canvas Baru";
 
 
-            closeModal();
+    document.getElementById("projectId")
+        .value = "";
 
-            renderCanvases();
 
-        }
+    document.getElementById("projectTitle")
+        .value = "";
 
 
-        /*
-        ==========================================================
-        NEW VERSION
-        ==========================================================
-        */
+    document.getElementById("canvasLink")
+        .value = "";
 
-        function addNewVersionFromModal() {
 
-            const id =
-                document
-                    .getElementById('canvasId')
-                    .value;
+    document.getElementById("versionName")
+        .value = "V1";
 
 
-            if (id === '') {
+    document.getElementById("versionLog")
+        .value = "";
 
-                alert(
-                    'Simpan project terlebih dahulu sebelum membuat versi baru.'
-                );
 
-                return;
+    document.getElementById("versionCode")
+        .value = "";
 
-            }
 
+    document.getElementById("thumbnailInput")
+        .value = "";
 
-            const item =
-                canvases[Number(id)];
 
+    document.getElementById("thumbnailPreview")
+        .innerHTML = "";
 
-            if (!item) return;
 
+    document.getElementById("existingHistory")
+        .innerHTML = "";
 
-            if (!item.history) {
 
-                item.history = [];
+    document
+        .getElementById("projectModal")
+        .classList.remove("hidden");
 
-            }
+}
 
 
-            const nextVersion =
-                `v1.${item.history.length}`;
+/* =========================================================
+   EDIT PROJECT
+   ========================================================= */
 
+function editProject(id) {
 
-            const newLog =
-                prompt(
-                    `Masukkan catatan update untuk versi baru (${nextVersion}):`,
-                    `Update fitur`
-                );
+    const project =
+        projects.find(
+            p => p.id === id
+        );
 
 
-            if (newLog === null) return;
+    if (!project)
+        return;
 
 
-            const codeSnippet =
-                document
-                    .getElementById('codeSnippet')
-                    .value;
+    editingProject =
+        project;
 
 
-            const date =
-                new Date()
-                    .toLocaleDateString(
-                        'id-ID',
-                        {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric'
-                        }
-                    );
+    document.getElementById("modalTitle")
+        .textContent = "Edit Project";
 
 
-            item.history.push({
+    document.getElementById("projectId")
+        .value = project.id;
 
-                version:
-                    nextVersion,
 
-                log:
-                    newLog,
+    document.getElementById("projectTitle")
+        .value = project.title || "";
 
-                code:
-                    codeSnippet,
 
-                date:
-                    date
+    document.getElementById("canvasLink")
+        .value = project.canvasLink || "";
 
-            });
 
+    document.getElementById("versionName")
+        .value =
+        "V" +
+        ((project.history?.length || 0) + 1);
 
-            item.activeVersionIdx =
-                item.history.length - 1;
 
+    document.getElementById("versionLog")
+        .value = "";
 
-            saveVault();
 
+    document.getElementById("versionCode")
+        .value = "";
 
-            editCanvas(Number(id));
 
-            renderCanvases();
+    document.getElementById("thumbnailInput")
+        .value = "";
 
 
-            alert(
-                `Versi ${nextVersion} berhasil disimpan!`
-            );
+    if (project.image) {
 
-        }
+        document.getElementById(
+            "thumbnailPreview"
+        ).innerHTML = `
 
+            <img
+                src="${escapeAttr(project.image)}"
+                class="max-h-40 rounded-xl border border-slate-700">
 
-        /*
-        ==========================================================
-        SWITCH VERSION
-        ==========================================================
-        */
+        `;
 
-        function switchVersion(
-            canvasIdx,
-            versionIdx
-        ) {
+    } else {
 
-            if (!canvases[canvasIdx]) return;
+        document.getElementById(
+            "thumbnailPreview"
+        ).innerHTML = "";
 
+    }
 
-            canvases[canvasIdx]
-                .activeVersionIdx =
-                versionIdx;
 
+    renderHistory(project);
 
-            saveVault();
 
+    document
+        .getElementById("projectModal")
+        .classList.remove("hidden");
 
-            renderCanvases();
+}
 
-        }
 
+/* =========================================================
+   HISTORY
+   ========================================================= */
 
-        /*
-        ==========================================================
-        EDIT PROJECT
-        ==========================================================
-        */
+function renderHistory(project) {
 
-        function editCanvas(index) {
+    const container =
+        document.getElementById("existingHistory");
 
-            const item =
-                canvases[index];
 
+    if (!project.history?.length) {
 
-            if (!item) return;
+        container.innerHTML = "";
 
+        return;
 
-            document
-                .getElementById('canvasId')
-                .value =
-                index;
+    }
 
 
-            document
-                .getElementById('title')
-                .value =
-                item.title || '';
+    container.innerHTML = `
 
+        <div
+            class="text-sm font-semibold text-slate-300">
 
-            document
-                .getElementById('canvasLink')
-                .value =
-                item.canvasLink || '';
+            Version History
 
+        </div>
 
-            const activeIdx =
-                item.activeVersionIdx || 0;
+        ${
+            project.history
+            .map((v, index) => `
 
+                <div
+                    class="border border-slate-800
+                           rounded-xl p-3">
 
-            const activeData =
-                item.history &&
-                item.history[activeIdx]
-                    ? item.history[activeIdx]
-                    : {};
+                    <div
+                        class="flex items-center
+                               justify-between gap-3">
 
+                        <div>
 
-            document
-                .getElementById('codeSnippet')
-                .value =
-                activeData.code || '';
+                            <div
+                                class="font-semibold text-sm">
 
+                                ${escapeHtml(
+                                    v.version ||
+                                    "Version " +
+                                    (index + 1)
+                                )}
 
-            document
-                .getElementById('updateLog')
-                .value =
-                activeData.log || '';
+                            </div>
 
+                            <div
+                                class="text-xs text-slate-500 mt-1">
 
-            /*
-            VERSION TABS
-            */
+                                ${escapeHtml(
+                                    v.date || ""
+                                )}
 
-            const history =
-                item.history || [];
+                            </div>
 
+                        </div>
 
-            const tabsHtml =
-                history.map(
-                    (ver, vIdx) => `
 
                         <button
-                            type="button"
-                            onclick="switchModalVersion(${index}, ${vIdx})"
-                            class="px-2 py-0.5 rounded text-[10px] font-mono font-bold transition cursor-pointer ${
-                                vIdx === activeIdx
-                                    ? 'bg-indigo-600 text-white'
-                                    : 'bg-slate-800 text-slate-400 hover:text-white'
-                            }"
-                        >
+                            onclick="loadVersion(${index})"
+                            class="btn btn-dark text-xs">
 
-                            ${escapeHtml(ver.version)}
+                            Gunakan
 
                         </button>
 
-                    `
-                ).join('');
+                    </div>
 
+                    ${
+                        v.log
+                        ?
+                        `<div
+                            class="text-xs text-slate-400 mt-2">
 
-            document
-                .getElementById('versionTabsInModal')
-                .innerHTML =
-                tabsHtml;
+                            ${escapeHtml(v.log)}
 
+                         </div>`
+                        :
+                        ""
+                    }
 
-            /*
-            IMAGE
-            */
+                </div>
 
-            if (item.image) {
-
-                document
-                    .getElementById('imagePreview')
-                    .src =
-                    item.image;
-
-
-                document
-                    .getElementById('imagePreviewContainer')
-                    .classList
-                    .remove('hidden');
-
-
-                currentBase64Image =
-                    item.image;
-
-            }
-
-            else {
-
-                document
-                    .getElementById('imagePreviewContainer')
-                    .classList
-                    .add('hidden');
-
-
-                currentBase64Image =
-                    '';
-
-            }
-
-
-            document
-                .getElementById('modalTitle')
-                .innerHTML =
-                `
-                    <i class="fa-solid fa-gear"></i>
-                    Pengaturan & Kode:
-                    ${escapeHtml(item.title)}
-                `;
-
-
-            document
-                .getElementById('canvasModal')
-                .classList
-                .remove('hidden');
-
-
-            document
-                .getElementById('canvasModal')
-                .classList
-                .add('flex');
-
+            `)
+            .join("")
         }
 
+    `;
 
-        /*
-        ==========================================================
-        SWITCH MODAL VERSION
-        ==========================================================
-        */
+}
 
-        function switchModalVersion(
-            canvasIdx,
-            versionIdx
+
+function loadVersion(index) {
+
+    if (!editingProject)
+        return;
+
+
+    const version =
+        editingProject.history[index];
+
+
+    if (!version)
+        return;
+
+
+    document.getElementById("versionName")
+        .value =
+        version.version || "";
+
+
+    document.getElementById("versionLog")
+        .value =
+        version.log || "";
+
+
+    document.getElementById("versionCode")
+        .value =
+        version.code || "";
+
+}
+
+
+/* =========================================================
+   SAVE PROJECT
+   ========================================================= */
+
+async function saveProject() {
+
+    const title =
+        document
+            .getElementById("projectTitle")
+            .value
+            .trim();
+
+
+    const canvasLink =
+        document
+            .getElementById("canvasLink")
+            .value
+            .trim();
+
+
+    const versionName =
+        document
+            .getElementById("versionName")
+            .value
+            .trim();
+
+
+    const versionLog =
+        document
+            .getElementById("versionLog")
+            .value
+            .trim();
+
+
+    const versionCode =
+        document
+            .getElementById("versionCode")
+            .value;
+
+
+    if (!title) {
+
+        alert("Nama project wajib diisi.");
+
+        return;
+    }
+
+
+    let image =
+        editingProject?.image || "";
+
+
+    const file =
+        document
+            .getElementById("thumbnailInput")
+            .files[0];
+
+
+    if (file) {
+
+        image =
+            await fileToDataURL(file);
+
+    }
+
+
+    const newVersion = {
+
+        version:
+            versionName ||
+            "V" +
+            ((editingProject?.history?.length || 0) + 1),
+
+        log:
+            versionLog,
+
+        code:
+            versionCode,
+
+        date:
+            new Date().toLocaleString("id-ID")
+
+    };
+
+
+    let history =
+        editingProject?.history
+        ?
+        [...editingProject.history]
+        :
+        [];
+
+
+    /*
+        Hanya tambahkan version baru
+        kalau user benar-benar memasukkan
+        code / log.
+    */
+
+    if (
+        versionCode.trim() ||
+        versionLog.trim()
+    ) {
+
+        history.push(
+            newVersion
+        );
+
+    }
+
+
+    const payload = {
+
+        title,
+
+        canvas_link:
+            canvasLink,
+
+        image,
+
+        history,
+
+        active_version_idx:
+            Math.max(
+                0,
+                history.length - 1
+            ),
+
+        user_id:
+            currentUser.id
+
+    };
+
+
+    setSyncStatus(
+        "Menyimpan ke cloud..."
+    );
+
+
+    let result;
+
+
+    if (editingProject) {
+
+        result =
+            await db
+                .from("projects")
+                .update({
+
+                    title:
+                        payload.title,
+
+                    canvas_link:
+                        payload.canvas_link,
+
+                    image:
+                        payload.image,
+
+                    history:
+                        payload.history,
+
+                    active_version_idx:
+                        payload.active_version_idx,
+
+                    updated_at:
+                        new Date().toISOString()
+
+                })
+                .eq(
+                    "id",
+                    editingProject.id
+                )
+                .eq(
+                    "user_id",
+                    currentUser.id
+                );
+
+    } else {
+
+        result =
+            await db
+                .from("projects")
+                .insert(payload);
+
+    }
+
+
+    if (result.error) {
+
+        console.error(
+            result.error
+        );
+
+
+        setSyncStatus(
+            "Gagal menyimpan: " +
+            result.error.message,
+            true
+        );
+
+
+        alert(
+            "Gagal menyimpan:\n\n" +
+            result.error.message
+        );
+
+
+        return;
+
+    }
+
+
+    closeModal();
+
+
+    await loadProjects();
+
+
+    /*
+        Simpan juga cache lokal.
+        Ini bukan database utama.
+        Hanya fallback / cache.
+    */
+
+    try {
+
+        localStorage.setItem(
+            VAULT_STORAGE_KEY,
+            JSON.stringify(
+                projects
+            )
+        );
+
+    } catch (e) {
+
+        console.warn(
+            "Local cache gagal:",
+            e
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   DELETE
+   ========================================================= */
+
+async function deleteProject(id) {
+
+    const project =
+        projects.find(
+            p => p.id === id
+        );
+
+
+    if (!project)
+        return;
+
+
+    const ok =
+        confirm(
+            `Hapus project "${project.title}" dari Vault online?`
+        );
+
+
+    if (!ok)
+        return;
+
+
+    setSyncStatus(
+        "Menghapus..."
+    );
+
+
+    const {
+        error
+    } = await db
+        .from("projects")
+        .delete()
+        .eq(
+            "id",
+            id
+        )
+        .eq(
+            "user_id",
+            currentUser.id
+        );
+
+
+    if (error) {
+
+        alert(
+            "Gagal menghapus:\n\n" +
+            error.message
+        );
+
+        return;
+
+    }
+
+
+    await loadProjects();
+
+}
+
+
+/* =========================================================
+   OPEN CANVAS
+   ========================================================= */
+
+function openCanvas(id) {
+
+    const project =
+        projects.find(
+            p => p.id === id
+        );
+
+
+    if (
+        project &&
+        project.canvasLink
+    ) {
+
+        window.open(
+            project.canvasLink,
+            "_blank",
+            "noopener,noreferrer"
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   MODAL
+   ========================================================= */
+
+function closeModal() {
+
+    document
+        .getElementById("projectModal")
+        .classList.add("hidden");
+
+}
+
+
+/* =========================================================
+   BACKUP
+   ========================================================= */
+
+function backupVault() {
+
+    const backup = {
+
+        app:
+            "ZK Vault",
+
+        type:
+            "canvas-project-backup",
+
+        backupVersion:
+            "2.0",
+
+        exportedAt:
+            new Date().toISOString(),
+
+        totalProjects:
+            projects.length,
+
+        projects:
+            projects
+
+    };
+
+
+    const blob =
+        new Blob(
+            [
+                JSON.stringify(
+                    backup,
+                    null,
+                    2
+                )
+            ],
+            {
+                type:
+                    "application/json"
+            }
+        );
+
+
+    const url =
+        URL.createObjectURL(
+            blob
+        );
+
+
+    const a =
+        document.createElement("a");
+
+
+    const date =
+        new Date()
+            .toISOString()
+            .slice(0, 10);
+
+
+    a.href =
+        url;
+
+
+    a.download =
+        `zk-vault-online-backup-${date}.json`;
+
+
+    document.body.appendChild(a);
+
+
+    a.click();
+
+
+    a.remove();
+
+
+    URL.revokeObjectURL(url);
+
+}
+
+
+/* =========================================================
+   RESTORE
+   ========================================================= */
+
+async function restoreVault(event) {
+
+    const file =
+        event.target.files[0];
+
+
+    if (!file)
+        return;
+
+
+    try {
+
+        const text =
+            await file.text();
+
+
+        const backup =
+            JSON.parse(text);
+
+
+        if (
+            !backup ||
+            backup.type !==
+            "canvas-project-backup"
         ) {
 
-            if (!canvases[canvasIdx]) return;
-
-
-            canvases[canvasIdx]
-                .activeVersionIdx =
-                versionIdx;
-
-
-            saveVault();
-
-
-            editCanvas(canvasIdx);
-
-            renderCanvases();
-
-        }
-
-
-        /*
-        ==========================================================
-        DELETE
-        ==========================================================
-        */
-
-        function deleteCanvas(index) {
-
-            if (
-                !confirm(
-                    'Yakin ingin menghapus project ini beserta seluruh riwayat kodenya?'
-                )
-            ) {
-
-                return;
-
-            }
-
-
-            canvases.splice(index, 1);
-
-
-            saveVault();
-
-
-            renderCanvases();
-
-        }
-
-
-        /*
-        ==========================================================
-        SAVE LOCAL STORAGE
-        ==========================================================
-        */
-
-        function saveVault() {
-
-            localStorage.setItem(
-                VAULT_STORAGE_KEY,
-                JSON.stringify(canvases)
+            alert(
+                "File backup ZK Vault tidak valid."
             );
 
+            return;
+
         }
 
 
-        /*
-        ==========================================================
-        EXPORT BACKUP
-        ==========================================================
-        */
+        if (
+            !Array.isArray(
+                backup.projects
+            )
+        ) {
 
-        function exportVaultBackup() {
+            alert(
+                "Data project tidak ditemukan."
+            );
 
-            try {
+            return;
 
-                const raw =
-                    localStorage.getItem(
-                        VAULT_STORAGE_KEY
-                    );
-
-
-                if (!raw) {
-
-                    alert(
-                        'Tidak ada data project yang ditemukan.'
-                    );
-
-                    return;
-
-                }
+        }
 
 
-                const projects =
-                    JSON.parse(raw);
+        const ok =
+            confirm(
+                `Restore ${backup.projects.length} project ke Vault online?\n\nProject yang sedang ada tidak akan langsung dihapus.`
+            );
 
 
-                if (!Array.isArray(projects)) {
-
-                    alert(
-                        'Data Vault tidak valid.'
-                    );
-
-                    return;
-
-                }
+        if (!ok)
+            return;
 
 
-                const backup = {
-
-                    app:
-                        'ZK Vault',
-
-                    type:
-                        'canvas-project-backup',
-
-                    backupVersion:
-                        '1.0',
-
-                    exportedAt:
-                        new Date().toISOString(),
-
-                    totalProjects:
-                        projects.length,
-
-                    projects:
-                        projects
-
-                };
+        setSyncStatus(
+            "Mengimport backup..."
+        );
 
 
-                const blob =
-                    new Blob(
-                        [
-                            JSON.stringify(
-                                backup,
-                                null,
-                                2
-                            )
-                        ],
-                        {
-                            type:
-                                'application/json'
-                        }
-                    );
+        let success =
+            0;
 
 
-                const url =
-                    URL.createObjectURL(
-                        blob
-                    );
+        for (
+            const project
+            of backup.projects
+        ) {
+
+            const payload = {
+
+                user_id:
+                    currentUser.id,
+
+                title:
+                    project.title || "",
+
+                canvas_link:
+                    project.canvasLink || "",
+
+                image:
+                    project.image || "",
+
+                history:
+                    project.history || [],
+
+                active_version_idx:
+                    project.activeVersionIdx || 0
+
+            };
 
 
-                const link =
-                    document.createElement('a');
+            const {
+                error
+            } = await db
+                .from("projects")
+                .insert(payload);
 
 
-                link.href =
-                    url;
+            if (!error) {
 
+                success++;
 
-                const date =
-                    new Date()
-                        .toISOString()
-                        .slice(0, 10);
+            } else {
 
-
-                link.download =
-                    `zk-vault-backup-${date}.json`;
-
-
-                document
-                    .body
-                    .appendChild(link);
-
-
-                link.click();
-
-
-                link.remove();
-
-
-                URL.revokeObjectURL(
-                    url
-                );
-
-
-                alert(
-
-                    'BACKUP BERHASIL!\n\n' +
-
-                    `Total project: ${projects.length}\n\n` +
-
-                    'Simpan file backup ini di tempat yang aman.\n\n' +
-
-                    'JANGAN HAPUS sebelum migrasi ke online storage selesai.'
-
-                );
-
-            }
-
-            catch (error) {
-
-                console.error(error);
-
-                alert(
-                    'Gagal membuat backup.'
+                console.error(
+                    error
                 );
 
             }
@@ -1547,176 +1852,318 @@
         }
 
 
-        /*
-        ==========================================================
-        IMPORT / RESTORE
-        ==========================================================
-        */
-
-        function importVaultBackup(event) {
-
-            const file =
-                event.target.files[0];
+        await loadProjects();
 
 
-            if (!file) return;
+        alert(
+            `Restore selesai.\n\nBerhasil: ${success}\nTotal: ${backup.projects.length}`
+        );
 
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "Gagal membaca file backup."
+        );
+
+    }
+
+
+    event.target.value = "";
+
+}
+
+
+/* =========================================================
+   OLD LOCAL DATA MIGRATION
+   ========================================================= */
+
+async function migrateOldLocalStorage() {
+
+    const raw =
+        localStorage.getItem(
+            VAULT_STORAGE_KEY
+        );
+
+
+    if (!raw)
+        return;
+
+
+    let oldProjects;
+
+
+    try {
+
+        oldProjects =
+            JSON.parse(raw);
+
+    } catch {
+
+        return;
+
+    }
+
+
+    if (
+        !Array.isArray(
+            oldProjects
+        ) ||
+        !oldProjects.length
+    ) {
+
+        return;
+
+    }
+
+
+    const answer =
+        confirm(
+            `Ditemukan ${oldProjects.length} project lama di browser ini.\n\nImport ke Vault Online sekarang?`
+        );
+
+
+    if (!answer)
+        return;
+
+
+    setSyncStatus(
+        "Memindahkan project lama ke cloud..."
+    );
+
+
+    let success =
+        0;
+
+
+    for (
+        const project
+        of oldProjects
+    ) {
+
+        const payload = {
+
+            user_id:
+                currentUser.id,
+
+            title:
+                project.title || "",
+
+            canvas_link:
+                project.canvasLink || "",
+
+            image:
+                project.image || "",
+
+            history:
+                project.history || [],
+
+            active_version_idx:
+                project.activeVersionIdx || 0
+
+        };
+
+
+        const {
+            error
+        } = await db
+            .from("projects")
+            .insert(payload);
+
+
+        if (!error) {
+
+            success++;
+
+        }
+
+    }
+
+
+    await loadProjects();
+
+
+    alert(
+        `Migrasi selesai.\n\nBerhasil: ${success} project.`
+    );
+
+}
+
+
+/* =========================================================
+   UTILITY
+   ========================================================= */
+
+function fileToDataURL(file) {
+
+    return new Promise(
+        (resolve, reject) => {
 
             const reader =
                 new FileReader();
 
 
             reader.onload =
-                function(e) {
-
-                    try {
-
-                        const backup =
-                            JSON.parse(
-                                e.target.result
-                            );
+                () =>
+                    resolve(
+                        reader.result
+                    );
 
 
-                        if (
-                            !backup ||
-                            backup.type !==
-                            'canvas-project-backup' ||
-                            !Array.isArray(
-                                backup.projects
-                            )
-                        ) {
-
-                            alert(
-                                'File backup ZK Vault tidak valid.'
-                            );
-
-                            return;
-
-                        }
+            reader.onerror =
+                reject;
 
 
-                        const existingRaw =
-                            localStorage.getItem(
-                                VAULT_STORAGE_KEY
-                            );
-
-
-                        let existingProjects =
-                            [];
-
-
-                        if (existingRaw) {
-
-                            try {
-
-                                existingProjects =
-                                    JSON.parse(
-                                        existingRaw
-                                    );
-
-                            }
-
-                            catch {
-
-                                existingProjects =
-                                    [];
-
-                            }
-
-                        }
-
-
-                        const confirmed =
-                            confirm(
-
-                                'BACKUP DITEMUKAN\n\n' +
-
-                                `Project dalam backup: ${backup.projects.length}\n` +
-
-                                `Project saat ini: ${existingProjects.length}\n\n` +
-
-                                'OK = GANTI data saat ini dengan backup.\n' +
-
-                                'Cancel = Batalkan.\n\n' +
-
-                                'Pastikan kamu memang ingin melakukan restore.'
-
-                            );
-
-
-                        if (!confirmed) {
-
-                            event.target.value =
-                                '';
-
-                            return;
-
-                        }
-
-
-                        localStorage.setItem(
-
-                            VAULT_STORAGE_KEY,
-
-                            JSON.stringify(
-                                backup.projects
-                            )
-
-                        );
-
-
-                        canvases =
-                            backup.projects;
-
-
-                        renderCanvases();
-
-
-                        alert(
-
-                            'RESTORE BERHASIL!\n\n' +
-
-                            `${backup.projects.length} project berhasil dipulihkan.`
-
-                        );
-
-                    }
-
-                    catch (error) {
-
-                        console.error(error);
-
-                        alert(
-
-                            'File backup tidak dapat dibaca.\n\n' +
-
-                            'Pastikan file tersebut adalah backup dari ZK Vault.'
-
-                        );
-
-                    }
-
-
-                    event.target.value =
-                        '';
-
-                };
-
-
-            reader.readAsText(file);
+            reader.readAsDataURL(
+                file
+            );
 
         }
+    );
+
+}
 
 
-        /*
-        ==========================================================
-        START
-        ==========================================================
-        */
+function escapeHtml(value) {
 
-        renderCanvases();
+    return String(
+        value ?? ""
+    )
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 
-    </script>
+}
+
+
+function escapeAttr(value) {
+
+    return escapeHtml(
+        value
+    );
+
+}
+
+
+function setSyncStatus(
+    message,
+    error = false
+) {
+
+    const el =
+        document.getElementById(
+            "syncStatus"
+        );
+
+
+    el.textContent =
+        message;
+
+
+    el.className =
+        "text-xs mt-1 " +
+        (
+            error
+            ? "text-red-400"
+            : "text-emerald-400"
+        );
+
+}
+
+
+/* =========================================================
+   AUTO MIGRATION
+   ========================================================= */
+
+async function checkMigration() {
+
+    if (!currentUser)
+        return;
+
+
+    const {
+        count,
+        error
+    } = await db
+        .from("projects")
+        .select(
+            "id",
+            {
+                count: "exact",
+                head: true
+            }
+        );
+
+
+    if (error)
+        return;
+
+
+    const old =
+        localStorage.getItem(
+            VAULT_STORAGE_KEY
+        );
+
+
+    if (
+        old &&
+        count === 0
+    ) {
+
+        setTimeout(
+            migrateOldLocalStorage,
+            1000
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   EXTENDED INIT AFTER LOGIN
+   ========================================================= */
+
+const originalLoadProjects =
+    loadProjects;
+
+
+/*
+    Jalankan migration setelah
+    project online selesai dimuat.
+*/
+
+const _loadProjects =
+    loadProjects;
+
+
+/* =========================================================
+   CLOSE MODAL ON BACKDROP
+   ========================================================= */
+
+document
+    .getElementById("projectModal")
+    .addEventListener(
+        "click",
+        function(e) {
+
+            if (
+                e.target === this
+            ) {
+
+                closeModal();
+
+            }
+
+        }
+    );
+
+
+</script>
 
 </body>
 </html>
