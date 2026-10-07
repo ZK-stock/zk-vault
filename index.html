@@ -1,192 +1,689 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-slate-950">
+<html lang="id" class="h-full bg-slate-950">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>ZK Vault - Online Canvas Tracker</title>
+    <title>ZK Vault - Gemini Canvas Tracker</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
     <link rel="preconnect" href="https://fonts.googleapis.com">
-
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet">
 
-    <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
     <style>
-
         * {
             box-sizing: border-box;
         }
 
         body {
-            font-family: Inter, sans-serif;
-            background:
-                radial-gradient(
-                    circle at top,
-                    rgba(16,185,129,.10),
-                    transparent 35%
-                ),
-                #020617;
-            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 999px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
         }
 
         .glass {
-            background: rgba(15,23,42,.72);
-            border: 1px solid rgba(148,163,184,.12);
-            backdrop-filter: blur(16px);
+            background: rgba(15, 23, 42, .75);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(148, 163, 184, .12);
         }
 
-        .input {
-            width: 100%;
-            background: #020617;
-            border: 1px solid #334155;
-            border-radius: 10px;
-            padding: 11px 13px;
-            color: white;
-            outline: none;
+        .project-card {
+            transition: all .2s ease;
         }
 
-        .input:focus {
-            border-color: #10b981;
-            box-shadow: 0 0 0 2px rgba(16,185,129,.12);
+        .project-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(16, 185, 129, .35);
         }
 
-        .btn {
-            border-radius: 10px;
-            padding: 10px 14px;
-            font-weight: 600;
-            transition: .2s;
+        .modal-backdrop {
+            background: rgba(0, 0, 0, .75);
+            backdrop-filter: blur(6px);
         }
 
-        .btn:hover {
-            transform: translateY(-1px);
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,.2);
+            border-top-color: #10b981;
+            border-radius: 50%;
+            animation: spin .7s linear infinite;
         }
 
-        .btn-green {
-            background: #10b981;
-            color: #022c22;
-        }
-
-        .btn-dark {
-            background: #1e293b;
-            color: #e2e8f0;
-        }
-
-        .btn-red {
-            background: #7f1d1d;
-            color: #fecaca;
-        }
-
-        .modal-bg {
-            background: rgba(0,0,0,.72);
-            backdrop-filter: blur(8px);
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         textarea {
             resize: vertical;
         }
-
-        .project-card {
-            transition: .2s;
-        }
-
-        .project-card:hover {
-            transform: translateY(-2px);
-            border-color: rgba(16,185,129,.35);
-        }
-
-        .thumb {
-            width: 100%;
-            aspect-ratio: 16/9;
-            object-fit: cover;
-            background: #020617;
-        }
-
-        .hidden-force {
-            display: none !important;
-        }
-
     </style>
 </head>
 
-<body class="min-h-screen">
+<body class="min-h-full bg-slate-950 text-slate-100">
 
-<!-- LOGIN -->
+<!-- =========================================================
+     SUPABASE CONFIG
+     ========================================================= -->
 
-<div id="loginScreen"
-     class="fixed inset-0 z-[100] flex items-center justify-center p-5">
+<script>
 
-    <div class="absolute inset-0 bg-slate-950"></div>
+    /*
+    ============================================================
+    MASUKKAN DATA SUPABASE KAMU DI SINI
+    ============================================================
 
-    <div class="glass relative w-full max-w-md rounded-2xl p-7 shadow-2xl">
+    Contoh:
 
-        <div class="text-center mb-7">
+    const SUPABASE_URL =
+        "https://xxxxxxxxxxxx.supabase.co";
 
-            <div
-                class="mx-auto mb-4 w-14 h-14 rounded-2xl bg-emerald-500/10
-                       flex items-center justify-center text-emerald-400 text-2xl">
+    const SUPABASE_KEY =
+        "sb_publishable_xxxxxxxxxxxx";
 
-                <i class="fa-solid fa-vault"></i>
+    atau jika project lama kamu masih menggunakan anon key:
+
+    const SUPABASE_KEY =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9....";
+
+    JANGAN masukkan:
+    - service_role key
+    - database password
+    ============================================================
+    */
+
+    const SUPABASE_URL = "PASTE_SUPABASE_URL_DI_SINI";
+
+    const SUPABASE_KEY = "PASTE_SUPABASE_ANON_ATAU_PUBLISHABLE_KEY_DI_SINI";
+
+
+    /*
+    ============================================================
+    VAULT ID
+    ============================================================
+
+    ID ini menentukan Vault mana yang digunakan.
+
+    Jangan diganti setelah mulai menyimpan data.
+
+    Karena ID ini sama di semua perangkat,
+    semua perangkat akan melihat data Vault yang sama.
+    ============================================================
+    */
+
+    const VAULT_ID = "zk-vault-main-2026";
+
+
+    /*
+    ============================================================
+    LOCAL STORAGE KEY
+    ============================================================
+    */
+
+    const VAULT_STORAGE_KEY = "zk_vault_canvases_clean";
+
+</script>
+
+
+<!-- =========================================================
+     HEADER
+     ========================================================= -->
+
+<header class="sticky top-0 z-30 border-b border-slate-800 bg-slate-950/90 backdrop-blur">
+
+    <div class="max-w-7xl mx-auto px-4 py-4">
+
+        <div class="flex flex-col lg:flex-row lg:items-center gap-4">
+
+            <!-- LOGO -->
+
+            <div class="flex items-center gap-3 shrink-0">
+
+                <div class="w-11 h-11 rounded-xl bg-emerald-500/10
+                            border border-emerald-500/20
+                            flex items-center justify-center">
+
+                    <i class="fa-solid fa-vault text-emerald-400 text-lg"></i>
+
+                </div>
+
+                <div>
+
+                    <h1 class="font-bold text-lg">
+                        ZK Vault
+                    </h1>
+
+                    <p class="text-xs text-slate-500">
+                        Gemini Canvas Tracker
+                    </p>
+
+                </div>
 
             </div>
 
-            <h1 class="text-2xl font-extrabold">
-                ZK Vault
-            </h1>
 
-            <p class="text-slate-400 text-sm mt-2">
-                Private Online Canvas Vault
+            <!-- SEARCH -->
+
+            <div class="relative flex-1">
+
+                <i class="fa-solid fa-search absolute left-4 top-1/2
+                          -translate-y-1/2 text-slate-500"></i>
+
+                <input
+                    id="searchInput"
+                    type="text"
+                    placeholder="Cari project..."
+                    class="w-full bg-slate-900 border border-slate-800
+                           rounded-xl pl-11 pr-4 py-3
+                           text-sm outline-none
+                           focus:border-emerald-500/50">
+
+            </div>
+
+
+            <!-- STATUS -->
+
+            <div id="syncStatus"
+                 class="flex items-center gap-2 text-xs text-slate-400
+                        bg-slate-900 border border-slate-800
+                        rounded-xl px-3 py-2">
+
+                <span id="syncDot"
+                      class="w-2 h-2 rounded-full bg-slate-500"></span>
+
+                <span id="syncText">
+                    Menghubungkan...
+                </span>
+
+            </div>
+
+
+            <!-- BUTTONS -->
+
+            <div class="flex gap-2">
+
+                <button
+                    onclick="exportVaultBackup()"
+                    class="px-4 py-3 rounded-xl
+                           bg-slate-900 border border-slate-800
+                           hover:bg-slate-800
+                           text-sm font-medium">
+
+                    <i class="fa-solid fa-download mr-1"></i>
+                    Backup
+
+                </button>
+
+
+                <label
+                    class="cursor-pointer px-4 py-3 rounded-xl
+                           bg-slate-900 border border-slate-800
+                           hover:bg-slate-800
+                           text-sm font-medium">
+
+                    <i class="fa-solid fa-upload mr-1"></i>
+                    Restore
+
+                    <input
+                        id="restoreInput"
+                        type="file"
+                        accept=".json,application/json"
+                        class="hidden"
+                        onchange="importVaultBackup(event)">
+
+                </label>
+
+
+                <button
+                    onclick="openModal(-1)"
+                    class="px-4 py-3 rounded-xl
+                           bg-emerald-500 hover:bg-emerald-400
+                           text-slate-950
+                           text-sm font-bold">
+
+                    <i class="fa-solid fa-plus mr-1"></i>
+                    Canvas Baru
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</header>
+
+
+<!-- =========================================================
+     MAIN
+     ========================================================= -->
+
+<main class="max-w-7xl mx-auto px-4 py-6">
+
+
+    <!-- INFO -->
+
+    <div class="glass rounded-2xl p-4 mb-6">
+
+        <div class="flex gap-3">
+
+            <div class="w-9 h-9 rounded-lg bg-emerald-500/10
+                        flex items-center justify-center shrink-0">
+
+                <i class="fa-solid fa-cloud text-emerald-400"></i>
+
+            </div>
+
+            <div>
+
+                <h2 class="font-semibold text-sm">
+                    ZK Vault Online
+                </h2>
+
+                <p class="text-xs text-slate-400 mt-1">
+                    Project disimpan ke database online dan dapat
+                    dibuka dari perangkat lain menggunakan Vault yang sama.
+                    Backup JSON tetap tersedia sebagai cadangan.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- COUNT -->
+
+    <div class="flex items-center justify-between mb-4">
+
+        <div>
+
+            <h2 class="text-sm font-semibold text-slate-300">
+                Project Canvas
+            </h2>
+
+            <p id="projectCount"
+               class="text-xs text-slate-500 mt-1">
+                0 project
             </p>
 
         </div>
 
-        <div class="space-y-4">
+    </div>
 
-            <input
-                id="loginEmail"
-                type="email"
-                class="input"
-                placeholder="Email">
 
-            <input
-                id="loginPassword"
-                type="password"
-                class="input"
-                placeholder="Password">
+    <!-- PROJECT GRID -->
+
+    <div id="canvasGrid"
+         class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+
+    </div>
+
+
+    <!-- EMPTY -->
+
+    <div id="emptyState"
+         class="hidden text-center py-20">
+
+        <div class="w-16 h-16 rounded-2xl bg-slate-900
+                    border border-slate-800
+                    flex items-center justify-center
+                    mx-auto mb-4">
+
+            <i class="fa-solid fa-folder-open text-slate-600 text-2xl"></i>
+
+        </div>
+
+        <h3 class="font-semibold text-slate-300">
+            Belum ada project
+        </h3>
+
+        <p class="text-sm text-slate-500 mt-1">
+            Tambahkan Gemini Canvas pertama kamu.
+        </p>
+
+        <button
+            onclick="openModal(-1)"
+            class="mt-5 px-5 py-3 rounded-xl
+                   bg-emerald-500 text-slate-950
+                   font-bold text-sm">
+
+            <i class="fa-solid fa-plus mr-1"></i>
+            Tambah Canvas
+
+        </button>
+
+    </div>
+
+</main>
+
+
+<!-- =========================================================
+     MODAL
+     ========================================================= -->
+
+<div id="modal"
+     class="hidden fixed inset-0 z-50 modal-backdrop
+            flex items-center justify-center p-4">
+
+    <div class="w-full max-w-4xl max-h-[92vh]
+                overflow-y-auto
+                bg-slate-950
+                border border-slate-800
+                rounded-2xl shadow-2xl">
+
+        <!-- MODAL HEADER -->
+
+        <div class="sticky top-0 z-10
+                    bg-slate-950/95 backdrop-blur
+                    border-b border-slate-800
+                    px-5 py-4
+                    flex items-center justify-between">
+
+            <div>
+
+                <h2 id="modalTitle"
+                    class="font-bold text-lg">
+                    Canvas Baru
+                </h2>
+
+                <p class="text-xs text-slate-500 mt-1">
+                    Simpan project dan kode Canvas
+                </p>
+
+            </div>
 
             <button
-                onclick="login()"
-                class="btn btn-green w-full">
+                onclick="closeModal()"
+                class="w-9 h-9 rounded-lg
+                       bg-slate-900
+                       hover:bg-slate-800
+                       text-slate-400">
 
-                <i class="fa-solid fa-right-to-bracket mr-2"></i>
-                Login
-
-            </button>
-
-            <button
-                onclick="registerAccount()"
-                class="btn btn-dark w-full">
-
-                Buat Akun
+                <i class="fa-solid fa-xmark"></i>
 
             </button>
 
         </div>
 
-        <div
-            id="loginStatus"
-            class="text-center text-sm mt-5 text-slate-400">
+
+        <!-- MODAL BODY -->
+
+        <div class="p-5 space-y-5">
+
+
+            <!-- TITLE -->
+
+            <div>
+
+                <label class="block text-xs font-semibold
+                              text-slate-400 mb-2">
+
+                    Nama Project
+
+                </label>
+
+                <input
+                    id="titleInput"
+                    type="text"
+                    placeholder="Contoh: ZK Vector Generator"
+
+                    class="w-full bg-slate-900
+                           border border-slate-800
+                           rounded-xl px-4 py-3
+                           outline-none
+                           focus:border-emerald-500/50">
+
+            </div>
+
+
+            <!-- LINK -->
+
+            <div>
+
+                <label class="block text-xs font-semibold
+                              text-slate-400 mb-2">
+
+                    Gemini Canvas URL
+
+                </label>
+
+                <input
+                    id="linkInput"
+                    type="url"
+                    placeholder="https://..."
+
+                    class="w-full bg-slate-900
+                           border border-slate-800
+                           rounded-xl px-4 py-3
+                           outline-none
+                           focus:border-emerald-500/50">
+
+            </div>
+
+
+            <!-- IMAGE -->
+
+            <div>
+
+                <label class="block text-xs font-semibold
+                              text-slate-400 mb-2">
+
+                    Thumbnail
+
+                </label>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                    <label
+                        class="cursor-pointer
+                               border border-dashed
+                               border-slate-700
+                               hover:border-emerald-500/40
+                               rounded-xl p-6
+                               text-center
+                               bg-slate-900/50">
+
+                        <i class="fa-solid fa-image
+                                  text-slate-600 text-2xl"></i>
+
+                        <p class="text-xs text-slate-500 mt-2">
+                            Pilih gambar
+                        </p>
+
+                        <input
+                            id="imageInput"
+                            type="file"
+                            accept="image/*"
+                            class="hidden">
+
+                    </label>
+
+
+                    <div id="imagePreview"
+                         class="hidden
+                                rounded-xl overflow-hidden
+                                border border-slate-800
+                                bg-slate-900
+                                min-h-[150px]">
+
+                        <img
+                            id="previewImage"
+                            class="w-full h-full object-cover">
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- VERSION -->
+
+            <div class="border-t border-slate-800 pt-5">
+
+                <div class="flex items-center justify-between mb-3">
+
+                    <div>
+
+                        <h3 class="font-semibold text-sm">
+                            Version
+                        </h3>
+
+                        <p class="text-xs text-slate-500 mt-1">
+                            Simpan beberapa versi kode project.
+                        </p>
+
+                    </div>
+
+                    <button
+                        id="newVersionButton"
+                        onclick="addNewVersionFromModal()"
+                        class="hidden px-3 py-2 rounded-lg
+                               bg-slate-900
+                               border border-slate-800
+                               hover:bg-slate-800
+                               text-xs">
+
+                        <i class="fa-solid fa-code-branch mr-1"></i>
+                        Version Baru
+
+                    </button>
+
+                </div>
+
+
+                <!-- VERSION SELECTOR -->
+
+                <div id="versionSelector"
+                     class="hidden mb-4">
+
+                    <select
+                        id="versionSelect"
+                        onchange="switchModalVersion()"
+                        class="w-full bg-slate-900
+                               border border-slate-800
+                               rounded-xl px-4 py-3
+                               text-sm outline-none">
+
+                    </select>
+
+                </div>
+
+
+                <!-- LOG -->
+
+                <div class="mb-4">
+
+                    <label class="block text-xs font-semibold
+                                  text-slate-400 mb-2">
+
+                        Catatan / Perubahan
+
+                    </label>
+
+                    <input
+                        id="logInput"
+                        type="text"
+                        placeholder="Contoh: Fix mobile layout"
+
+                        class="w-full bg-slate-900
+                               border border-slate-800
+                               rounded-xl px-4 py-3
+                               outline-none
+                               focus:border-emerald-500/50">
+
+                </div>
+
+
+                <!-- CODE -->
+
+                <div>
+
+                    <label class="block text-xs font-semibold
+                                  text-slate-400 mb-2">
+
+                        Code
+
+                    </label>
+
+                    <textarea
+                        id="codeInput"
+                        rows="15"
+                        placeholder="Paste kode Canvas di sini..."
+
+                        class="w-full bg-black
+                               border border-slate-800
+                               rounded-xl px-4 py-3
+                               font-mono text-xs
+                               text-emerald-300
+                               outline-none
+                               focus:border-emerald-500/50"></textarea>
+
+                </div>
+
+            </div>
+
+
+            <!-- ACTION -->
+
+            <div class="flex flex-col sm:flex-row gap-2 pt-2">
+
+                <button
+                    onclick="saveCanvas(event)"
+                    class="flex-1 px-5 py-3 rounded-xl
+                           bg-emerald-500
+                           hover:bg-emerald-400
+                           text-slate-950
+                           font-bold">
+
+                    <i class="fa-solid fa-cloud-arrow-up mr-1"></i>
+                    Simpan ke Cloud
+
+                </button>
+
+
+                <button
+                    onclick="closeModal()"
+                    class="px-5 py-3 rounded-xl
+                           bg-slate-900
+                           border border-slate-800
+                           hover:bg-slate-800">
+
+                    Batal
+
+                </button>
+
+            </div>
+
         </div>
 
     </div>
@@ -194,328 +691,19 @@
 </div>
 
 
-<!-- APP -->
-
-<div id="app"
-     class="hidden min-h-screen">
-
-    <!-- HEADER -->
-
-    <header
-        class="sticky top-0 z-40 border-b border-slate-800/80
-               bg-slate-950/90 backdrop-blur-xl">
-
-        <div
-            class="max-w-7xl mx-auto px-4 py-4
-                   flex flex-col lg:flex-row
-                   lg:items-center lg:justify-between gap-4">
-
-            <div>
-
-                <div class="flex items-center gap-3">
-
-                    <div
-                        class="w-10 h-10 rounded-xl
-                               bg-emerald-500/10
-                               flex items-center justify-center
-                               text-emerald-400">
-
-                        <i class="fa-solid fa-vault"></i>
-
-                    </div>
-
-                    <div>
-
-                        <h1 class="font-extrabold text-lg">
-                            ZK Vault
-                        </h1>
-
-                        <p class="text-xs text-slate-500">
-                            Online Canvas Tracker
-                        </p>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div class="flex flex-wrap gap-2">
-
-                <button
-                    onclick="backupVault()"
-                    class="btn btn-dark">
-
-                    <i class="fa-solid fa-download mr-1"></i>
-                    Backup
-
-                </button>
-
-                <button
-                    onclick="document.getElementById('restoreFile').click()"
-                    class="btn btn-dark">
-
-                    <i class="fa-solid fa-upload mr-1"></i>
-                    Restore
-
-                </button>
-
-                <input
-                    id="restoreFile"
-                    type="file"
-                    accept=".json"
-                    class="hidden"
-                    onchange="restoreVault(event)">
-
-                <button
-                    onclick="openNewProject()"
-                    class="btn btn-green">
-
-                    <i class="fa-solid fa-plus mr-1"></i>
-                    Canvas Baru
-
-                </button>
-
-                <button
-                    onclick="logout()"
-                    class="btn btn-red">
-
-                    <i class="fa-solid fa-right-from-bracket mr-1"></i>
-                    Logout
-
-                </button>
-
-            </div>
-
-        </div>
-
-    </header>
-
-
-    <!-- MAIN -->
-
-    <main class="max-w-7xl mx-auto px-4 py-7">
-
-        <div
-            class="glass rounded-2xl p-4 mb-6
-                   flex flex-col md:flex-row gap-3
-                   md:items-center md:justify-between">
-
-            <div>
-
-                <div class="font-semibold">
-                    Cloud Vault
-                </div>
-
-                <div
-                    id="syncStatus"
-                    class="text-xs text-slate-500 mt-1">
-
-                    Menghubungkan...
-
-                </div>
-
-            </div>
-
-            <div class="relative w-full md:w-80">
-
-                <i
-                    class="fa-solid fa-search absolute left-3 top-3.5
-                           text-slate-500">
-                </i>
-
-                <input
-                    id="searchInput"
-                    oninput="renderProjects()"
-                    class="input pl-10"
-                    placeholder="Cari project...">
-
-            </div>
-
-        </div>
-
-
-        <!-- PROJECT LIST -->
-
-        <div
-            id="projectGrid"
-            class="grid grid-cols-1 sm:grid-cols-2
-                   lg:grid-cols-3 xl:grid-cols-4 gap-5">
-
-        </div>
-
-
-        <div
-            id="emptyState"
-            class="hidden text-center py-20">
-
-            <div
-                class="text-5xl text-slate-700 mb-5">
-
-                <i class="fa-solid fa-box-open"></i>
-
-            </div>
-
-            <h2 class="text-lg font-bold">
-                Belum ada project
-            </h2>
-
-            <p class="text-slate-500 text-sm mt-2">
-                Tambahkan Canvas pertama Anda.
-            </p>
-
-        </div>
-
-    </main>
-
-</div>
-
-
-<!-- PROJECT MODAL -->
-
-<div
-    id="projectModal"
-    class="hidden fixed inset-0 z-50 modal-bg
-           flex items-center justify-center p-4">
-
-    <div
-        class="glass w-full max-w-3xl
-               max-h-[92vh] overflow-y-auto
-               rounded-2xl p-6">
-
-        <div
-            class="flex items-center justify-between mb-6">
-
-            <h2
-                id="modalTitle"
-                class="text-xl font-bold">
-
-                Canvas Baru
-
-            </h2>
-
-            <button
-                onclick="closeModal()"
-                class="text-slate-400 hover:text-white">
-
-                <i class="fa-solid fa-xmark text-xl"></i>
-
-            </button>
-
-        </div>
-
-
-        <input
-            type="hidden"
-            id="projectId">
-
-
-        <div class="space-y-5">
-
-            <div>
-
-                <label class="block text-sm font-semibold mb-2">
-                    Nama Project
-                </label>
-
-                <input
-                    id="projectTitle"
-                    class="input"
-                    placeholder="Contoh: ZK Metadata">
-
-            </div>
-
-
-            <div>
-
-                <label class="block text-sm font-semibold mb-2">
-                    Link Gemini / Canvas
-                </label>
-
-                <input
-                    id="canvasLink"
-                    class="input"
-                    placeholder="https://...">
-
-            </div>
-
-
-            <div>
-
-                <label class="block text-sm font-semibold mb-2">
-                    Thumbnail
-                </label>
-
-                <input
-                    id="thumbnailInput"
-                    type="file"
-                    accept="image/*"
-                    class="input">
-
-                <div
-                    id="thumbnailPreview"
-                    class="mt-3">
-                </div>
-
-            </div>
-
-
-            <div>
-
-                <label class="block text-sm font-semibold mb-2">
-                    Version / Code
-                </label>
-
-                <input
-                    id="versionName"
-                    class="input mb-3"
-                    placeholder="Contoh: V1">
-
-                <textarea
-                    id="versionLog"
-                    class="input mb-3"
-                    rows="3"
-                    placeholder="Catatan perubahan..."></textarea>
-
-                <textarea
-                    id="versionCode"
-                    class="input font-mono text-xs"
-                    rows="12"
-                    placeholder="Paste code Canvas di sini..."></textarea>
-
-            </div>
-
-
-            <div
-                id="existingHistory"
-                class="space-y-2">
-            </div>
-
-
-            <div
-                class="flex flex-wrap justify-end gap-2 pt-3">
-
-                <button
-                    onclick="closeModal()"
-                    class="btn btn-dark">
-
-                    Batal
-
-                </button>
-
-                <button
-                    onclick="saveProject()"
-                    class="btn btn-green">
-
-                    <i class="fa-solid fa-cloud-arrow-up mr-1"></i>
-                    Simpan Online
-
-                </button>
-
-            </div>
-
-        </div>
+<!-- =========================================================
+     TOAST
+     ========================================================= -->
+
+<div id="toast"
+     class="fixed bottom-5 right-5 z-[100]
+            hidden max-w-sm">
+
+    <div id="toastInner"
+         class="px-4 py-3 rounded-xl
+                border border-slate-700
+                bg-slate-900 shadow-xl
+                text-sm">
 
     </div>
 
@@ -525,351 +713,459 @@
 <script>
 
 /* =========================================================
-   SUPABASE CONFIG
+   STATE
    ========================================================= */
 
-const SUPABASE_URL =
-    "MASUKKAN_PROJECT_URL_ANDA";
+let canvases = [];
 
-const SUPABASE_ANON_KEY =
-    "MASUKKAN_ANON_KEY_ANDA";
+let editingIndex = -1;
 
+let currentBase64Image = "";
 
-const { createClient } = supabase;
+let currentModalVersionIdx = 0;
 
-const db = createClient(
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY
-);
+let isOnline = false;
 
 
 /* =========================================================
-   LOCAL STORAGE
+   SUPABASE REST
    ========================================================= */
 
-const VAULT_STORAGE_KEY =
-    "zk_vault_canvases_clean";
+function getSupabaseHeaders() {
+
+    return {
+        "apikey": SUPABASE_KEY,
+        "Authorization": "Bearer " + SUPABASE_KEY,
+        "Content-Type": "application/json"
+    };
+
+}
 
 
-let projects = [];
+function supabaseConfigured() {
 
-let currentUser = null;
+    return (
+        SUPABASE_URL &&
+        SUPABASE_KEY &&
+        !SUPABASE_URL.includes("PASTE_") &&
+        !SUPABASE_KEY.includes("PASTE_")
+    );
 
-let editingProject = null;
+}
 
 
 /* =========================================================
-   INIT
+   STATUS
    ========================================================= */
 
-async function init() {
+function setSyncStatus(status, text) {
 
-    if (
-        SUPABASE_URL.includes("MASUKKAN_") ||
-        SUPABASE_ANON_KEY.includes("MASUKKAN_")
-    ) {
+    const dot = document.getElementById("syncDot");
+    const label = document.getElementById("syncText");
 
-        document.getElementById("loginStatus").innerHTML =
-            `<span class="text-red-400">
-                Isi SUPABASE_URL dan SUPABASE_ANON_KEY terlebih dahulu.
-             </span>`;
+    label.textContent = text;
 
-        return;
+    dot.className =
+        "w-2 h-2 rounded-full " +
+        (
+            status === "online"
+                ? "bg-emerald-400"
+                : status === "loading"
+                    ? "bg-yellow-400"
+                    : status === "error"
+                        ? "bg-red-400"
+                        : "bg-slate-500"
+        );
+
+}
+
+
+/* =========================================================
+   TOAST
+   ========================================================= */
+
+function showToast(message, type = "normal") {
+
+    const toast = document.getElementById("toast");
+    const inner = document.getElementById("toastInner");
+
+    inner.textContent = message;
+
+    if (type === "success") {
+
+        inner.className =
+            "px-4 py-3 rounded-xl border border-emerald-500/20 " +
+            "bg-emerald-500/10 text-emerald-300 shadow-xl text-sm";
+
+    } else if (type === "error") {
+
+        inner.className =
+            "px-4 py-3 rounded-xl border border-red-500/20 " +
+            "bg-red-500/10 text-red-300 shadow-xl text-sm";
+
+    } else {
+
+        inner.className =
+            "px-4 py-3 rounded-xl border border-slate-700 " +
+            "bg-slate-900 text-slate-200 shadow-xl text-sm";
+
     }
 
+    toast.classList.remove("hidden");
 
-    const {
-        data: {
-            session
+    clearTimeout(window.zkToastTimer);
+
+    window.zkToastTimer = setTimeout(() => {
+
+        toast.classList.add("hidden");
+
+    }, 3000);
+
+}
+
+
+/* =========================================================
+   ESCAPE
+   ========================================================= */
+
+function escapeHtml(value) {
+
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+}
+
+
+function escapeAttribute(value) {
+
+    return escapeHtml(value);
+
+}
+
+
+/* =========================================================
+   LOCAL CACHE
+   ========================================================= */
+
+function saveLocalCache() {
+
+    try {
+
+        localStorage.setItem(
+            VAULT_STORAGE_KEY,
+            JSON.stringify(canvases)
+        );
+
+    } catch (error) {
+
+        console.warn("Local cache gagal:", error);
+
+    }
+
+}
+
+
+function loadLocalCache() {
+
+    try {
+
+        const saved =
+            localStorage.getItem(VAULT_STORAGE_KEY);
+
+        if (saved) {
+
+            const parsed = JSON.parse(saved);
+
+            if (Array.isArray(parsed)) {
+
+                canvases = parsed;
+
+            }
+
         }
-    } = await db.auth.getSession();
 
+    } catch (error) {
 
-    if (session) {
-
-        currentUser =
-            session.user;
-
-        showApp();
-
-        await loadProjects();
+        console.warn("Local cache gagal dibaca:", error);
 
     }
 
+}
 
-    db.auth.onAuthStateChange(
-        async (event, session) => {
 
-            if (session) {
+/* =========================================================
+   CLOUD LOAD
+   ========================================================= */
 
-                currentUser =
-                    session.user;
+async function loadVaultFromCloud() {
 
-                showApp();
+    if (!supabaseConfigured()) {
 
-                await loadProjects();
+        setSyncStatus(
+            "offline",
+            "Config belum diisi"
+        );
+
+        showToast(
+            "Isi SUPABASE_URL dan SUPABASE_KEY terlebih dahulu.",
+            "error"
+        );
+
+        return false;
+
+    }
+
+    setSyncStatus(
+        "loading",
+        "Memuat cloud..."
+    );
+
+
+    try {
+
+        const url =
+            SUPABASE_URL.replace(/\/$/, "") +
+            "/rest/v1/zk_vault" +
+            "?id=eq." +
+            encodeURIComponent(VAULT_ID) +
+            "&select=*";
+
+
+        const response = await fetch(
+            url,
+            {
+                method: "GET",
+                headers: getSupabaseHeaders()
+            }
+        );
+
+
+        if (!response.ok) {
+
+            const errorText = await response.text();
+
+            throw new Error(
+                "HTTP " +
+                response.status +
+                ": " +
+                errorText
+            );
+
+        }
+
+
+        const rows = await response.json();
+
+
+        if (rows.length > 0) {
+
+            const cloudData = rows[0].data;
+
+            if (Array.isArray(cloudData)) {
+
+                canvases = cloudData;
+
+                saveLocalCache();
+
+            }
+
+        } else {
+
+            /*
+            Belum ada data cloud.
+            Kita cek apakah localStorage memiliki project.
+            Jika ada, cloud akan dibuat dari data lokal.
+            */
+
+            if (canvases.length > 0) {
+
+                await saveVaultToCloud();
 
             } else {
 
-                currentUser =
-                    null;
-
-                showLogin();
+                await createEmptyVault();
 
             }
 
         }
+
+
+        isOnline = true;
+
+        setSyncStatus(
+            "online",
+            "Cloud tersambung"
+        );
+
+        renderCanvases();
+
+        return true;
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        isOnline = false;
+
+        setSyncStatus(
+            "error",
+            "Cloud error"
+        );
+
+        showToast(
+            "Gagal mengambil data cloud: " + error.message,
+            "error"
+        );
+
+        return false;
+
+    }
+
+}
+
+
+/* =========================================================
+   CREATE EMPTY VAULT
+   ========================================================= */
+
+async function createEmptyVault() {
+
+    const url =
+        SUPABASE_URL.replace(/\/$/, "") +
+        "/rest/v1/zk_vault";
+
+
+    const response = await fetch(
+        url,
+        {
+            method: "POST",
+
+            headers: {
+                ...getSupabaseHeaders(),
+                "Prefer": "return=minimal"
+            },
+
+            body: JSON.stringify({
+                id: VAULT_ID,
+                data: canvases,
+                updated_at: new Date().toISOString()
+            })
+        }
     );
 
-}
 
+    if (!response.ok) {
 
-init();
+        const text = await response.text();
 
-
-/* =========================================================
-   LOGIN
-   ========================================================= */
-
-async function login() {
-
-    const email =
-        document.getElementById("loginEmail").value.trim();
-
-    const password =
-        document.getElementById("loginPassword").value;
-
-
-    if (!email || !password) {
-
-        setLoginStatus(
-            "Email dan password wajib diisi.",
-            true
-        );
-
-        return;
-    }
-
-
-    setLoginStatus("Login...");
-
-
-    const {
-        error
-    } = await db.auth.signInWithPassword({
-
-        email,
-        password
-
-    });
-
-
-    if (error) {
-
-        setLoginStatus(
-            error.message,
-            true
+        throw new Error(
+            "Gagal membuat Vault: " + text
         );
 
     }
-
-}
-
-
-async function registerAccount() {
-
-    const email =
-        document.getElementById("loginEmail").value.trim();
-
-    const password =
-        document.getElementById("loginPassword").value;
-
-
-    if (!email || !password) {
-
-        setLoginStatus(
-            "Isi email dan password terlebih dahulu.",
-            true
-        );
-
-        return;
-    }
-
-
-    if (password.length < 6) {
-
-        setLoginStatus(
-            "Password minimal 6 karakter.",
-            true
-        );
-
-        return;
-    }
-
-
-    setLoginStatus("Membuat akun...");
-
-
-    const {
-        error
-    } = await db.auth.signUp({
-
-        email,
-        password
-
-    });
-
-
-    if (error) {
-
-        setLoginStatus(
-            error.message,
-            true
-        );
-
-        return;
-    }
-
-
-    setLoginStatus(
-        "Akun dibuat. Jika email confirmation aktif, cek email Anda."
-    );
-
-}
-
-
-function setLoginStatus(
-    message,
-    error = false
-) {
-
-    const el =
-        document.getElementById("loginStatus");
-
-    el.textContent =
-        message;
-
-    el.className =
-        "text-center text-sm mt-5 " +
-        (error
-            ? "text-red-400"
-            : "text-emerald-400");
-
-}
-
-
-async function logout() {
-
-    await db.auth.signOut();
 
 }
 
 
 /* =========================================================
-   SCREEN
+   CLOUD SAVE
    ========================================================= */
 
-function showApp() {
+async function saveVaultToCloud() {
 
-    document
-        .getElementById("loginScreen")
-        .classList.add("hidden");
+    if (!supabaseConfigured()) {
 
-    document
-        .getElementById("app")
-        .classList.remove("hidden");
+        saveLocalCache();
 
-}
+        return false;
 
+    }
 
-function showLogin() {
-
-    document
-        .getElementById("loginScreen")
-        .classList.remove("hidden");
-
-    document
-        .getElementById("app")
-        .classList.add("hidden");
-
-}
-
-
-/* =========================================================
-   LOAD ONLINE PROJECTS
-   ========================================================= */
-
-async function loadProjects() {
 
     setSyncStatus(
-        "Mengambil data dari cloud..."
+        "loading",
+        "Menyimpan..."
     );
 
 
-    const {
-        data,
-        error
-    } = await db
-        .from("projects")
-        .select("*")
-        .order(
-            "updated_at",
+    try {
+
+        const url =
+            SUPABASE_URL.replace(/\/$/, "") +
+            "/rest/v1/zk_vault";
+
+
+        const response = await fetch(
+            url,
             {
-                ascending: false
+                method: "POST",
+
+                headers: {
+                    ...getSupabaseHeaders(),
+                    "Prefer": "resolution=merge-duplicates,return=minimal"
+                },
+
+                body: JSON.stringify({
+                    id: VAULT_ID,
+                    data: canvases,
+                    updated_at: new Date().toISOString()
+                })
             }
         );
 
 
-    if (error) {
+        if (!response.ok) {
+
+            const text = await response.text();
+
+            throw new Error(
+                "HTTP " +
+                response.status +
+                ": " +
+                text
+            );
+
+        }
+
+
+        saveLocalCache();
+
+        isOnline = true;
+
+        setSyncStatus(
+            "online",
+            "Tersimpan online"
+        );
+
+        return true;
+
+
+    } catch (error) {
 
         console.error(error);
 
+        saveLocalCache();
+
+        isOnline = false;
+
         setSyncStatus(
-            "Gagal mengambil data: " +
-            error.message,
-            true
+            "error",
+            "Gagal sync"
         );
 
-        return;
+        showToast(
+            "Cloud gagal. Data tetap disimpan lokal.",
+            "error"
+        );
+
+        return false;
+
     }
-
-
-    projects =
-        data.map(row => ({
-
-            id:
-                row.id,
-
-            title:
-                row.title,
-
-            canvasLink:
-                row.canvas_link,
-
-            image:
-                row.image,
-
-            history:
-                row.history || [],
-
-            activeVersionIdx:
-                row.active_version_idx || 0,
-
-            created_at:
-                row.created_at,
-
-            updated_at:
-                row.updated_at
-
-        }));
-
-
-    renderProjects();
-
-
-    setSyncStatus(
-        `${projects.length} project tersimpan online`
-    );
 
 }
 
@@ -878,37 +1174,48 @@ async function loadProjects() {
    RENDER
    ========================================================= */
 
-function renderProjects() {
+function renderCanvases() {
 
     const grid =
-        document.getElementById("projectGrid");
+        document.getElementById("canvasGrid");
 
     const empty =
         document.getElementById("emptyState");
 
-
-    const query =
-        document
-            .getElementById("searchInput")
+    const search =
+        document.getElementById("searchInput")
             .value
-            .toLowerCase()
-            .trim();
+            .trim()
+            .toLowerCase();
 
 
-    const filtered =
-        projects.filter(project =>
+    const filtered = canvases.filter(item => {
 
-            project.title
-                .toLowerCase()
-                .includes(query)
+        const title =
+            String(item.title || "").toLowerCase();
 
+        const link =
+            String(item.canvasLink || "").toLowerCase();
+
+        return (
+            title.includes(search) ||
+            link.includes(search)
         );
 
+    });
 
-    grid.innerHTML = "";
+
+    document.getElementById("projectCount")
+        .textContent =
+        canvases.length +
+        (canvases.length === 1
+            ? " project"
+            : " projects");
 
 
-    if (!filtered.length) {
+    if (filtered.length === 0) {
+
+        grid.innerHTML = "";
 
         empty.classList.remove("hidden");
 
@@ -920,715 +1227,238 @@ function renderProjects() {
     empty.classList.add("hidden");
 
 
-    filtered.forEach(project => {
+    grid.innerHTML =
+        filtered.map(item => {
 
-        const historyCount =
-            project.history?.length || 0;
+            const originalIndex =
+                canvases.indexOf(item);
 
 
-        const card =
-            document.createElement("div");
+            const image =
+                item.image || "";
 
 
-        card.className =
-            "project-card glass rounded-2xl overflow-hidden";
+            const history =
+                Array.isArray(item.history)
+                    ? item.history
+                    : [];
 
 
-        card.innerHTML = `
+            const activeIdx =
+                Number.isInteger(item.activeVersionIdx)
+                    ? item.activeVersionIdx
+                    : 0;
 
-            ${
-                project.image
-                ?
-                `<img
-                    src="${escapeAttr(project.image)}"
-                    class="thumb">`
-                :
-                `<div
-                    class="thumb flex items-center
-                           justify-center text-slate-700
-                           text-4xl">
 
-                    <i class="fa-solid fa-code"></i>
+            const activeVersion =
+                history[activeIdx] ||
+                history[history.length - 1];
 
-                 </div>`
-            }
 
+            const version =
+                activeVersion
+                    ? activeVersion.version
+                    : "v1.0";
 
-            <div class="p-4">
 
-                <div
-                    class="font-bold truncate"
-                    title="${escapeAttr(project.title)}">
+            const log =
+                activeVersion
+                    ? activeVersion.log
+                    : "";
 
-                    ${escapeHtml(project.title)}
 
-                </div>
+            return `
 
+                <div class="project-card
+                            glass rounded-2xl
+                            overflow-hidden">
 
-                <div
-                    class="text-xs text-slate-500 mt-1">
+                    <!-- IMAGE -->
 
-                    ${historyCount}
-                    version
+                    <div class="aspect-video bg-slate-900
+                                relative overflow-hidden">
 
-                </div>
+                        ${
+                            image
+                            ?
+                            `
+                            <img
+                                src="${escapeAttribute(image)}"
+                                class="w-full h-full object-cover">
+                            `
+                            :
+                            `
+                            <div class="w-full h-full
+                                        flex items-center justify-center">
 
+                                <i class="fa-solid fa-code
+                                          text-slate-700 text-4xl"></i>
 
-                <div
-                    class="flex flex-wrap gap-2 mt-4">
+                            </div>
+                            `
+                        }
 
-                    ${
-                        project.canvasLink
-                        ?
-                        `<button
-                            onclick="openCanvas('${project.id}')"
-                            class="btn btn-green text-xs">
 
-                            <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i>
-                            Canvas
+                        <div class="absolute top-3 left-3">
 
-                         </button>`
-                        :
-                        ""
-                    }
+                            <span class="px-2 py-1 rounded-lg
+                                         bg-black/70
+                                         text-[10px]
+                                         text-emerald-300
+                                         border border-white/10">
 
+                                ${escapeHtml(version)}
 
-                    <button
-                        onclick="editProject('${project.id}')"
-                        class="btn btn-dark text-xs">
+                            </span>
 
-                        <i class="fa-solid fa-pen mr-1"></i>
-                        Edit
+                        </div>
 
-                    </button>
+                    </div>
 
 
-                    <button
-                        onclick="deleteProject('${project.id}')"
-                        class="btn btn-red text-xs">
+                    <!-- CONTENT -->
 
-                        <i class="fa-solid fa-trash mr-1"></i>
-                        Hapus
+                    <div class="p-4">
 
-                    </button>
+                        <div class="flex items-start
+                                    justify-between gap-3">
 
-                </div>
+                            <div class="min-w-0">
 
-            </div>
+                                <h3 class="font-semibold
+                                           truncate">
 
-        `;
-
-
-        grid.appendChild(card);
-
-    });
-
-}
-
-
-/* =========================================================
-   NEW PROJECT
-   ========================================================= */
-
-function openNewProject() {
-
-    editingProject = null;
-
-
-    document.getElementById("modalTitle")
-        .textContent = "Canvas Baru";
-
-
-    document.getElementById("projectId")
-        .value = "";
-
-
-    document.getElementById("projectTitle")
-        .value = "";
-
-
-    document.getElementById("canvasLink")
-        .value = "";
-
-
-    document.getElementById("versionName")
-        .value = "V1";
-
-
-    document.getElementById("versionLog")
-        .value = "";
-
-
-    document.getElementById("versionCode")
-        .value = "";
-
-
-    document.getElementById("thumbnailInput")
-        .value = "";
-
-
-    document.getElementById("thumbnailPreview")
-        .innerHTML = "";
-
-
-    document.getElementById("existingHistory")
-        .innerHTML = "";
-
-
-    document
-        .getElementById("projectModal")
-        .classList.remove("hidden");
-
-}
-
-
-/* =========================================================
-   EDIT PROJECT
-   ========================================================= */
-
-function editProject(id) {
-
-    const project =
-        projects.find(
-            p => p.id === id
-        );
-
-
-    if (!project)
-        return;
-
-
-    editingProject =
-        project;
-
-
-    document.getElementById("modalTitle")
-        .textContent = "Edit Project";
-
-
-    document.getElementById("projectId")
-        .value = project.id;
-
-
-    document.getElementById("projectTitle")
-        .value = project.title || "";
-
-
-    document.getElementById("canvasLink")
-        .value = project.canvasLink || "";
-
-
-    document.getElementById("versionName")
-        .value =
-        "V" +
-        ((project.history?.length || 0) + 1);
-
-
-    document.getElementById("versionLog")
-        .value = "";
-
-
-    document.getElementById("versionCode")
-        .value = "";
-
-
-    document.getElementById("thumbnailInput")
-        .value = "";
-
-
-    if (project.image) {
-
-        document.getElementById(
-            "thumbnailPreview"
-        ).innerHTML = `
-
-            <img
-                src="${escapeAttr(project.image)}"
-                class="max-h-40 rounded-xl border border-slate-700">
-
-        `;
-
-    } else {
-
-        document.getElementById(
-            "thumbnailPreview"
-        ).innerHTML = "";
-
-    }
-
-
-    renderHistory(project);
-
-
-    document
-        .getElementById("projectModal")
-        .classList.remove("hidden");
-
-}
-
-
-/* =========================================================
-   HISTORY
-   ========================================================= */
-
-function renderHistory(project) {
-
-    const container =
-        document.getElementById("existingHistory");
-
-
-    if (!project.history?.length) {
-
-        container.innerHTML = "";
-
-        return;
-
-    }
-
-
-    container.innerHTML = `
-
-        <div
-            class="text-sm font-semibold text-slate-300">
-
-            Version History
-
-        </div>
-
-        ${
-            project.history
-            .map((v, index) => `
-
-                <div
-                    class="border border-slate-800
-                           rounded-xl p-3">
-
-                    <div
-                        class="flex items-center
-                               justify-between gap-3">
-
-                        <div>
-
-                            <div
-                                class="font-semibold text-sm">
-
-                                ${escapeHtml(
-                                    v.version ||
-                                    "Version " +
-                                    (index + 1)
-                                )}
+                                    ${escapeHtml(
+                                        item.title || "Untitled"
+                                    )}
+
+                                </h3>
+
+                                ${
+                                    log
+                                    ?
+                                    `
+                                    <p class="text-xs
+                                              text-slate-500
+                                              mt-1
+                                              truncate">
+
+                                        ${escapeHtml(log)}
+
+                                    </p>
+                                    `
+                                    :
+                                    `
+                                    <p class="text-xs
+                                              text-slate-600
+                                              mt-1">
+
+                                        Tidak ada catatan
+
+                                    </p>
+                                    `
+                                }
 
                             </div>
 
-                            <div
-                                class="text-xs text-slate-500 mt-1">
 
-                                ${escapeHtml(
-                                    v.date || ""
-                                )}
+                            <span class="text-[10px]
+                                         text-slate-600
+                                         shrink-0">
 
-                            </div>
+                                ${
+                                    history.length
+                                }
+                                v
+
+                            </span>
 
                         </div>
 
 
-                        <button
-                            onclick="loadVersion(${index})"
-                            class="btn btn-dark text-xs">
+                        <!-- ACTIONS -->
 
-                            Gunakan
+                        <div class="flex gap-2 mt-4">
 
-                        </button>
+                            ${
+                                item.canvasLink
+                                ?
+                                `
+                                <a
+                                    href="${escapeAttribute(
+                                        item.canvasLink
+                                    )}"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="flex-1
+                                           text-center
+                                           px-3 py-2
+                                           rounded-lg
+                                           bg-emerald-500/10
+                                           text-emerald-400
+                                           border border-emerald-500/20
+                                           hover:bg-emerald-500/20
+                                           text-xs
+                                           font-semibold">
+
+                                    <i class="fa-solid fa-up-right-from-square mr-1"></i>
+                                    Canvas
+
+                                </a>
+                                `
+                                :
+                                `
+                                <button
+                                    disabled
+                                    class="flex-1
+                                           px-3 py-2
+                                           rounded-lg
+                                           bg-slate-900
+                                           text-slate-700
+                                           text-xs">
+
+                                    Tidak ada link
+
+                                </button>
+                                `
+                            }
+
+
+                            <button
+                                onclick="editCanvas(${originalIndex})"
+                                class="px-3 py-2 rounded-lg
+                                       bg-slate-900
+                                       border border-slate-800
+                                       hover:bg-slate-800
+                                       text-xs">
+
+                                <i class="fa-solid fa-pen"></i>
+
+                            </button>
+
+
+                            <button
+                                onclick="deleteCanvas(${originalIndex})"
+                                class="px-3 py-2 rounded-lg
+                                       bg-slate-900
+                                       border border-slate-800
+                                       hover:bg-red-500/10
+                                       hover:text-red-400
+                                       text-xs">
+
+                                <i class="fa-solid fa-trash"></i>
+
+                            </button>
+
+                        </div>
 
                     </div>
 
-                    ${
-                        v.log
-                        ?
-                        `<div
-                            class="text-xs text-slate-400 mt-2">
-
-                            ${escapeHtml(v.log)}
-
-                         </div>`
-                        :
-                        ""
-                    }
-
                 </div>
 
-            `)
-            .join("")
-        }
+            `;
 
-    `;
-
-}
-
-
-function loadVersion(index) {
-
-    if (!editingProject)
-        return;
-
-
-    const version =
-        editingProject.history[index];
-
-
-    if (!version)
-        return;
-
-
-    document.getElementById("versionName")
-        .value =
-        version.version || "";
-
-
-    document.getElementById("versionLog")
-        .value =
-        version.log || "";
-
-
-    document.getElementById("versionCode")
-        .value =
-        version.code || "";
-
-}
-
-
-/* =========================================================
-   SAVE PROJECT
-   ========================================================= */
-
-async function saveProject() {
-
-    const title =
-        document
-            .getElementById("projectTitle")
-            .value
-            .trim();
-
-
-    const canvasLink =
-        document
-            .getElementById("canvasLink")
-            .value
-            .trim();
-
-
-    const versionName =
-        document
-            .getElementById("versionName")
-            .value
-            .trim();
-
-
-    const versionLog =
-        document
-            .getElementById("versionLog")
-            .value
-            .trim();
-
-
-    const versionCode =
-        document
-            .getElementById("versionCode")
-            .value;
-
-
-    if (!title) {
-
-        alert("Nama project wajib diisi.");
-
-        return;
-    }
-
-
-    let image =
-        editingProject?.image || "";
-
-
-    const file =
-        document
-            .getElementById("thumbnailInput")
-            .files[0];
-
-
-    if (file) {
-
-        image =
-            await fileToDataURL(file);
-
-    }
-
-
-    const newVersion = {
-
-        version:
-            versionName ||
-            "V" +
-            ((editingProject?.history?.length || 0) + 1),
-
-        log:
-            versionLog,
-
-        code:
-            versionCode,
-
-        date:
-            new Date().toLocaleString("id-ID")
-
-    };
-
-
-    let history =
-        editingProject?.history
-        ?
-        [...editingProject.history]
-        :
-        [];
-
-
-    /*
-        Hanya tambahkan version baru
-        kalau user benar-benar memasukkan
-        code / log.
-    */
-
-    if (
-        versionCode.trim() ||
-        versionLog.trim()
-    ) {
-
-        history.push(
-            newVersion
-        );
-
-    }
-
-
-    const payload = {
-
-        title,
-
-        canvas_link:
-            canvasLink,
-
-        image,
-
-        history,
-
-        active_version_idx:
-            Math.max(
-                0,
-                history.length - 1
-            ),
-
-        user_id:
-            currentUser.id
-
-    };
-
-
-    setSyncStatus(
-        "Menyimpan ke cloud..."
-    );
-
-
-    let result;
-
-
-    if (editingProject) {
-
-        result =
-            await db
-                .from("projects")
-                .update({
-
-                    title:
-                        payload.title,
-
-                    canvas_link:
-                        payload.canvas_link,
-
-                    image:
-                        payload.image,
-
-                    history:
-                        payload.history,
-
-                    active_version_idx:
-                        payload.active_version_idx,
-
-                    updated_at:
-                        new Date().toISOString()
-
-                })
-                .eq(
-                    "id",
-                    editingProject.id
-                )
-                .eq(
-                    "user_id",
-                    currentUser.id
-                );
-
-    } else {
-
-        result =
-            await db
-                .from("projects")
-                .insert(payload);
-
-    }
-
-
-    if (result.error) {
-
-        console.error(
-            result.error
-        );
-
-
-        setSyncStatus(
-            "Gagal menyimpan: " +
-            result.error.message,
-            true
-        );
-
-
-        alert(
-            "Gagal menyimpan:\n\n" +
-            result.error.message
-        );
-
-
-        return;
-
-    }
-
-
-    closeModal();
-
-
-    await loadProjects();
-
-
-    /*
-        Simpan juga cache lokal.
-        Ini bukan database utama.
-        Hanya fallback / cache.
-    */
-
-    try {
-
-        localStorage.setItem(
-            VAULT_STORAGE_KEY,
-            JSON.stringify(
-                projects
-            )
-        );
-
-    } catch (e) {
-
-        console.warn(
-            "Local cache gagal:",
-            e
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   DELETE
-   ========================================================= */
-
-async function deleteProject(id) {
-
-    const project =
-        projects.find(
-            p => p.id === id
-        );
-
-
-    if (!project)
-        return;
-
-
-    const ok =
-        confirm(
-            `Hapus project "${project.title}" dari Vault online?`
-        );
-
-
-    if (!ok)
-        return;
-
-
-    setSyncStatus(
-        "Menghapus..."
-    );
-
-
-    const {
-        error
-    } = await db
-        .from("projects")
-        .delete()
-        .eq(
-            "id",
-            id
-        )
-        .eq(
-            "user_id",
-            currentUser.id
-        );
-
-
-    if (error) {
-
-        alert(
-            "Gagal menghapus:\n\n" +
-            error.message
-        );
-
-        return;
-
-    }
-
-
-    await loadProjects();
-
-}
-
-
-/* =========================================================
-   OPEN CANVAS
-   ========================================================= */
-
-function openCanvas(id) {
-
-    const project =
-        projects.find(
-            p => p.id === id
-        );
-
-
-    if (
-        project &&
-        project.canvasLink
-    ) {
-
-        window.open(
-            project.canvasLink,
-            "_blank",
-            "noopener,noreferrer"
-        );
-
-    }
+        }).join("");
 
 }
 
@@ -1637,11 +1467,652 @@ function openCanvas(id) {
    MODAL
    ========================================================= */
 
+function openModal(index = -1) {
+
+    editingIndex = index;
+
+    currentModalVersionIdx = 0;
+
+    document.getElementById("modal")
+        .classList.remove("hidden");
+
+
+    const title =
+        document.getElementById("modalTitle");
+
+
+    if (index === -1) {
+
+        title.textContent =
+            "Canvas Baru";
+
+
+        document.getElementById("titleInput").value =
+            "";
+
+        document.getElementById("linkInput").value =
+            "";
+
+        document.getElementById("logInput").value =
+            "";
+
+        document.getElementById("codeInput").value =
+            "";
+
+
+        currentBase64Image = "";
+
+
+        document.getElementById("imageInput").value =
+            "";
+
+
+        document.getElementById("imagePreview")
+            .classList.add("hidden");
+
+
+        document.getElementById("newVersionButton")
+            .classList.add("hidden");
+
+
+        document.getElementById("versionSelector")
+            .classList.add("hidden");
+
+
+    } else {
+
+        const item = canvases[index];
+
+        title.textContent =
+            "Edit Canvas";
+
+
+        document.getElementById("titleInput").value =
+            item.title || "";
+
+
+        document.getElementById("linkInput").value =
+            item.canvasLink || "";
+
+
+        currentBase64Image =
+            item.image || "";
+
+
+        if (currentBase64Image) {
+
+            document.getElementById("previewImage")
+                .src = currentBase64Image;
+
+            document.getElementById("imagePreview")
+                .classList.remove("hidden");
+
+        } else {
+
+            document.getElementById("imagePreview")
+                .classList.add("hidden");
+
+        }
+
+
+        const history =
+            Array.isArray(item.history)
+                ? item.history
+                : [];
+
+
+        if (history.length > 0) {
+
+            document.getElementById("newVersionButton")
+                .classList.remove("hidden");
+
+            document.getElementById("versionSelector")
+                .classList.remove("hidden");
+
+
+            currentModalVersionIdx =
+                Number.isInteger(item.activeVersionIdx)
+                    ? item.activeVersionIdx
+                    : history.length - 1;
+
+
+            renderModalVersions();
+
+            loadModalVersion(
+                currentModalVersionIdx
+            );
+
+        } else {
+
+            document.getElementById("newVersionButton")
+                .classList.remove("hidden");
+
+            document.getElementById("versionSelector")
+                .classList.add("hidden");
+
+            document.getElementById("logInput").value =
+                "";
+
+            document.getElementById("codeInput").value =
+                "";
+
+        }
+
+    }
+
+}
+
+
 function closeModal() {
 
-    document
-        .getElementById("projectModal")
+    document.getElementById("modal")
         .classList.add("hidden");
+
+    editingIndex = -1;
+
+    currentModalVersionIdx = 0;
+
+}
+
+
+/* =========================================================
+   IMAGE INPUT
+   ========================================================= */
+
+document.getElementById("imageInput")
+    .addEventListener("change", function(event) {
+
+        const file =
+            event.target.files[0];
+
+        if (!file) return;
+
+
+        const reader =
+            new FileReader();
+
+
+        reader.onload = function(e) {
+
+            currentBase64Image =
+                e.target.result;
+
+
+            document.getElementById("previewImage")
+                .src = currentBase64Image;
+
+
+            document.getElementById("imagePreview")
+                .classList.remove("hidden");
+
+        };
+
+
+        reader.readAsDataURL(file);
+
+    });
+
+
+/* =========================================================
+   VERSION RENDER
+   ========================================================= */
+
+function renderModalVersions() {
+
+    const select =
+        document.getElementById("versionSelect");
+
+
+    if (editingIndex < 0) return;
+
+
+    const item =
+        canvases[editingIndex];
+
+
+    const history =
+        Array.isArray(item.history)
+            ? item.history
+            : [];
+
+
+    select.innerHTML =
+        history.map((version, index) => {
+
+            return `
+                <option value="${index}">
+                    ${escapeHtml(
+                        version.version || "v1.0"
+                    )}
+                    ${
+                        version.date
+                        ?
+                        " — " +
+                        new Date(version.date)
+                            .toLocaleString()
+                        :
+                        ""
+                    }
+                </option>
+            `;
+
+        }).join("");
+
+
+    select.value =
+        currentModalVersionIdx;
+
+}
+
+
+function loadModalVersion(index) {
+
+    if (editingIndex < 0) return;
+
+
+    const item =
+        canvases[editingIndex];
+
+
+    const history =
+        Array.isArray(item.history)
+            ? item.history
+            : [];
+
+
+    const version =
+        history[index];
+
+
+    if (!version) return;
+
+
+    currentModalVersionIdx =
+        index;
+
+
+    document.getElementById("versionSelect")
+        .value = index;
+
+
+    document.getElementById("logInput")
+        .value =
+        version.log || "";
+
+
+    document.getElementById("codeInput")
+        .value =
+        version.code || "";
+
+}
+
+
+function switchModalVersion() {
+
+    const index =
+        Number(
+            document.getElementById("versionSelect")
+                .value
+        );
+
+
+    loadModalVersion(index);
+
+}
+
+
+function switchVersion(index, versionIndex) {
+
+    const item =
+        canvases[index];
+
+
+    if (!item.history ||
+        !item.history[versionIndex]) {
+
+        return;
+
+    }
+
+
+    item.activeVersionIdx =
+        versionIndex;
+
+
+    saveLocalCache();
+
+    renderCanvases();
+
+    saveVaultToCloud();
+
+}
+
+
+/* =========================================================
+   ADD NEW VERSION
+   ========================================================= */
+
+function addNewVersionFromModal() {
+
+    if (editingIndex < 0) return;
+
+
+    const item =
+        canvases[editingIndex];
+
+
+    if (!Array.isArray(item.history)) {
+
+        item.history = [];
+
+    }
+
+
+    const newVersionNumber =
+        item.history.length + 1;
+
+
+    const newVersion = {
+
+        version:
+            "v1." +
+            newVersionNumber,
+
+        log:
+            "Version baru",
+
+        code:
+            "",
+
+        date:
+            new Date().toISOString()
+
+    };
+
+
+    item.history.push(
+        newVersion
+    );
+
+
+    item.activeVersionIdx =
+        item.history.length - 1;
+
+
+    currentModalVersionIdx =
+        item.history.length - 1;
+
+
+    renderModalVersions();
+
+
+    loadModalVersion(
+        currentModalVersionIdx
+    );
+
+
+    showToast(
+        "Version baru dibuat.",
+        "success"
+    );
+
+}
+
+
+/* =========================================================
+   SAVE
+   ========================================================= */
+
+async function saveCanvas(event) {
+
+    if (event) {
+        event.preventDefault();
+    }
+
+
+    const title =
+        document.getElementById("titleInput")
+            .value
+            .trim();
+
+
+    const canvasLink =
+        document.getElementById("linkInput")
+            .value
+            .trim();
+
+
+    const log =
+        document.getElementById("logInput")
+            .value
+            .trim();
+
+
+    const code =
+        document.getElementById("codeInput")
+            .value;
+
+
+    if (!title) {
+
+        showToast(
+            "Nama project wajib diisi.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    if (editingIndex === -1) {
+
+        /*
+        ================================================
+        PROJECT BARU
+        ================================================
+        */
+
+        const item = {
+
+            title,
+
+            canvasLink,
+
+            image:
+                currentBase64Image || "",
+
+            history: [
+
+                {
+
+                    version: "v1.0",
+
+                    log:
+                        log || "Initial version",
+
+                    code,
+
+                    date:
+                        new Date().toISOString()
+
+                }
+
+            ],
+
+            activeVersionIdx: 0
+
+        };
+
+
+        canvases.unshift(item);
+
+
+    } else {
+
+        /*
+        ================================================
+        EDIT PROJECT
+        ================================================
+        */
+
+        const item =
+            canvases[editingIndex];
+
+
+        item.title =
+            title;
+
+
+        item.canvasLink =
+            canvasLink;
+
+
+        item.image =
+            currentBase64Image || "";
+
+
+        if (!Array.isArray(item.history)) {
+
+            item.history = [];
+
+        }
+
+
+        if (item.history.length === 0) {
+
+            item.history.push({
+
+                version: "v1.0",
+
+                log:
+                    log || "Initial version",
+
+                code,
+
+                date:
+                    new Date().toISOString()
+
+            });
+
+
+            item.activeVersionIdx = 0;
+
+
+        } else {
+
+            const activeIndex =
+                Number.isInteger(
+                    item.activeVersionIdx
+                )
+                ?
+                item.activeVersionIdx
+                :
+                item.history.length - 1;
+
+
+            item.history[activeIndex] = {
+
+                ...item.history[activeIndex],
+
+                log,
+
+                code
+
+            };
+
+        }
+
+    }
+
+
+    saveLocalCache();
+
+    renderCanvases();
+
+    closeModal();
+
+
+    showToast(
+        "Menyimpan ke cloud...",
+        "normal"
+    );
+
+
+    const saved =
+        await saveVaultToCloud();
+
+
+    if (saved) {
+
+        showToast(
+            "Project berhasil disimpan online.",
+            "success"
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   EDIT
+   ========================================================= */
+
+function editCanvas(index) {
+
+    openModal(index);
+
+}
+
+
+/* =========================================================
+   DELETE
+   ========================================================= */
+
+async function deleteCanvas(index) {
+
+    const item =
+        canvases[index];
+
+
+    if (!item) return;
+
+
+    const confirmed =
+        confirm(
+            'Hapus project "' +
+            item.title +
+            '"?\n\nData akan dihapus dari cloud.'
+        );
+
+
+    if (!confirmed) return;
+
+
+    canvases.splice(
+        index,
+        1
+    );
+
+
+    saveLocalCache();
+
+    renderCanvases();
+
+
+    const saved =
+        await saveVaultToCloud();
+
+
+    if (saved) {
+
+        showToast(
+            "Project berhasil dihapus.",
+            "success"
+        );
+
+    }
 
 }
 
@@ -1650,12 +2121,11 @@ function closeModal() {
    BACKUP
    ========================================================= */
 
-function backupVault() {
+function exportVaultBackup() {
 
     const backup = {
 
-        app:
-            "ZK Vault",
+        app: "ZK Vault",
 
         type:
             "canvas-project-backup",
@@ -1667,10 +2137,10 @@ function backupVault() {
             new Date().toISOString(),
 
         totalProjects:
-            projects.length,
+            canvases.length,
 
         projects:
-            projects
+            canvases
 
     };
 
@@ -1692,9 +2162,7 @@ function backupVault() {
 
 
     const url =
-        URL.createObjectURL(
-            blob
-        );
+        URL.createObjectURL(blob);
 
 
     const a =
@@ -1712,19 +2180,25 @@ function backupVault() {
 
 
     a.download =
-        `zk-vault-online-backup-${date}.json`;
+        "zk-vault-backup-" +
+        date +
+        ".json";
 
 
     document.body.appendChild(a);
 
-
     a.click();
-
 
     a.remove();
 
 
     URL.revokeObjectURL(url);
+
+
+    showToast(
+        "Backup JSON berhasil dibuat.",
+        "success"
+    );
 
 }
 
@@ -1733,14 +2207,13 @@ function backupVault() {
    RESTORE
    ========================================================= */
 
-async function restoreVault(event) {
+async function importVaultBackup(event) {
 
     const file =
         event.target.files[0];
 
 
-    if (!file)
-        return;
+    if (!file) return;
 
 
     try {
@@ -1753,119 +2226,86 @@ async function restoreVault(event) {
             JSON.parse(text);
 
 
-        if (
-            !backup ||
-            backup.type !==
-            "canvas-project-backup"
+        let projects = null;
+
+
+        if (Array.isArray(backup)) {
+
+            projects = backup;
+
+        } else if (
+            Array.isArray(backup.projects)
         ) {
 
-            alert(
-                "File backup ZK Vault tidak valid."
-            );
-
-            return;
+            projects =
+                backup.projects;
 
         }
 
 
-        if (
-            !Array.isArray(
-                backup.projects
-            )
-        ) {
+        if (!projects) {
 
-            alert(
-                "Data project tidak ditemukan."
+            throw new Error(
+                "Format backup tidak dikenali."
             );
-
-            return;
 
         }
 
 
-        const ok =
+        const confirmed =
             confirm(
-                `Restore ${backup.projects.length} project ke Vault online?\n\nProject yang sedang ada tidak akan langsung dihapus.`
+                "Restore akan mengganti data Vault saat ini dengan " +
+                projects.length +
+                " project.\n\nLanjutkan?"
             );
 
 
-        if (!ok)
+        if (!confirmed) {
+
+            event.target.value = "";
+
             return;
-
-
-        setSyncStatus(
-            "Mengimport backup..."
-        );
-
-
-        let success =
-            0;
-
-
-        for (
-            const project
-            of backup.projects
-        ) {
-
-            const payload = {
-
-                user_id:
-                    currentUser.id,
-
-                title:
-                    project.title || "",
-
-                canvas_link:
-                    project.canvasLink || "",
-
-                image:
-                    project.image || "",
-
-                history:
-                    project.history || [],
-
-                active_version_idx:
-                    project.activeVersionIdx || 0
-
-            };
-
-
-            const {
-                error
-            } = await db
-                .from("projects")
-                .insert(payload);
-
-
-            if (!error) {
-
-                success++;
-
-            } else {
-
-                console.error(
-                    error
-                );
-
-            }
 
         }
 
 
-        await loadProjects();
+        canvases =
+            projects;
 
 
-        alert(
-            `Restore selesai.\n\nBerhasil: ${success}\nTotal: ${backup.projects.length}`
+        saveLocalCache();
+
+        renderCanvases();
+
+
+        showToast(
+            "Backup dipulihkan. Mengirim ke cloud...",
+            "normal"
         );
+
+
+        const saved =
+            await saveVaultToCloud();
+
+
+        if (saved) {
+
+            showToast(
+                "Restore berhasil dan sudah online.",
+                "success"
+            );
+
+        }
 
 
     } catch (error) {
 
         console.error(error);
 
-        alert(
-            "Gagal membaca file backup."
+        showToast(
+            "Restore gagal: " +
+            error.message,
+            "error"
         );
 
     }
@@ -1877,291 +2317,75 @@ async function restoreVault(event) {
 
 
 /* =========================================================
-   OLD LOCAL DATA MIGRATION
+   SEARCH
    ========================================================= */
 
-async function migrateOldLocalStorage() {
-
-    const raw =
-        localStorage.getItem(
-            VAULT_STORAGE_KEY
-        );
-
-
-    if (!raw)
-        return;
-
-
-    let oldProjects;
-
-
-    try {
-
-        oldProjects =
-            JSON.parse(raw);
-
-    } catch {
-
-        return;
-
-    }
-
-
-    if (
-        !Array.isArray(
-            oldProjects
-        ) ||
-        !oldProjects.length
-    ) {
-
-        return;
-
-    }
-
-
-    const answer =
-        confirm(
-            `Ditemukan ${oldProjects.length} project lama di browser ini.\n\nImport ke Vault Online sekarang?`
-        );
-
-
-    if (!answer)
-        return;
-
-
-    setSyncStatus(
-        "Memindahkan project lama ke cloud..."
-    );
-
-
-    let success =
-        0;
-
-
-    for (
-        const project
-        of oldProjects
-    ) {
-
-        const payload = {
-
-            user_id:
-                currentUser.id,
-
-            title:
-                project.title || "",
-
-            canvas_link:
-                project.canvasLink || "",
-
-            image:
-                project.image || "",
-
-            history:
-                project.history || [],
-
-            active_version_idx:
-                project.activeVersionIdx || 0
-
-        };
-
-
-        const {
-            error
-        } = await db
-            .from("projects")
-            .insert(payload);
-
-
-        if (!error) {
-
-            success++;
-
-        }
-
-    }
-
-
-    await loadProjects();
-
-
-    alert(
-        `Migrasi selesai.\n\nBerhasil: ${success} project.`
-    );
-
-}
-
-
-/* =========================================================
-   UTILITY
-   ========================================================= */
-
-function fileToDataURL(file) {
-
-    return new Promise(
-        (resolve, reject) => {
-
-            const reader =
-                new FileReader();
-
-
-            reader.onload =
-                () =>
-                    resolve(
-                        reader.result
-                    );
-
-
-            reader.onerror =
-                reject;
-
-
-            reader.readAsDataURL(
-                file
-            );
-
-        }
-    );
-
-}
-
-
-function escapeHtml(value) {
-
-    return String(
-        value ?? ""
-    )
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-
-}
-
-
-function escapeAttr(value) {
-
-    return escapeHtml(
-        value
-    );
-
-}
-
-
-function setSyncStatus(
-    message,
-    error = false
-) {
-
-    const el =
-        document.getElementById(
-            "syncStatus"
-        );
-
-
-    el.textContent =
-        message;
-
-
-    el.className =
-        "text-xs mt-1 " +
-        (
-            error
-            ? "text-red-400"
-            : "text-emerald-400"
-        );
-
-}
-
-
-/* =========================================================
-   AUTO MIGRATION
-   ========================================================= */
-
-async function checkMigration() {
-
-    if (!currentUser)
-        return;
-
-
-    const {
-        count,
-        error
-    } = await db
-        .from("projects")
-        .select(
-            "id",
-            {
-                count: "exact",
-                head: true
-            }
-        );
-
-
-    if (error)
-        return;
-
-
-    const old =
-        localStorage.getItem(
-            VAULT_STORAGE_KEY
-        );
-
-
-    if (
-        old &&
-        count === 0
-    ) {
-
-        setTimeout(
-            migrateOldLocalStorage,
-            1000
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   EXTENDED INIT AFTER LOGIN
-   ========================================================= */
-
-const originalLoadProjects =
-    loadProjects;
-
-
-/*
-    Jalankan migration setelah
-    project online selesai dimuat.
-*/
-
-const _loadProjects =
-    loadProjects;
-
-
-/* =========================================================
-   CLOSE MODAL ON BACKDROP
-   ========================================================= */
-
-document
-    .getElementById("projectModal")
+document.getElementById("searchInput")
     .addEventListener(
-        "click",
-        function(e) {
-
-            if (
-                e.target === this
-            ) {
-
-                closeModal();
-
-            }
-
-        }
+        "input",
+        renderCanvases
     );
 
+
+/* =========================================================
+   KEYBOARD
+   ========================================================= */
+
+document.addEventListener(
+    "keydown",
+    function(event) {
+
+        if (
+            event.key === "Escape" &&
+            !document.getElementById("modal")
+                .classList.contains("hidden")
+        ) {
+
+            closeModal();
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   INITIAL LOAD
+   ========================================================= */
+
+async function initializeVault() {
+
+    /*
+    Load cache dulu supaya data lama
+    tetap muncul walaupun internet lambat.
+    */
+
+    loadLocalCache();
+
+    renderCanvases();
+
+
+    /*
+    Kemudian ambil versi cloud.
+    */
+
+    if (supabaseConfigured()) {
+
+        await loadVaultFromCloud();
+
+    } else {
+
+        setSyncStatus(
+            "offline",
+            "Config belum diisi"
+        );
+
+    }
+
+}
+
+
+initializeVault();
 
 </script>
 
